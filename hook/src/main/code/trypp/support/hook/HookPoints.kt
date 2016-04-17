@@ -46,7 +46,7 @@ class HookPoints internal constructor() {
         return points[base] as T
     }
 
-    fun <T : Any> replace(base: KClass<T>, impl: KClass<out T>) {
+    fun <T : Any> replace(base: KClass<T>, impl: KClass<out T>): T {
         val currentInstance = get(base)
         var newInstance: T
         try {
@@ -64,10 +64,14 @@ class HookPoints internal constructor() {
         }
 
         points.put(base, newInstance)
+
+        return currentInstance
     }
 
-    fun <T : Any> replace(base: KClass<T>, instance: T) {
-        get(base) // Throws exception if not found
+    fun <T : Any> replace(base: KClass<T>, instance: T): T {
+        val currentInstance = get(base)
         points.put(base, instance);
+
+        return currentInstance
     }
 }

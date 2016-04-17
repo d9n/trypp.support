@@ -107,8 +107,8 @@ class TimestampLogger(wrapped: Logger) : Logger {
         return "#{getDate()}: #{message}";
     }
 
-    private fun getDate() {
-        // ... stuff ...
+    private fun getDate(): Date {
+        return Date()
     }
 }
 ```
@@ -231,13 +231,14 @@ Still, the following pattern can occasionally be quite useful:
 
 ```kotlin
 class SomeTest {
-    fun setUp() {
-        G.hook.pushMark()
-        G.hook.points.replace(NetworkLoader::class, TestNetworkLoader::class)
+    var prevLoader: NetworkLoader by Delegates.notNull()
+
+    @BeforeClass fun setUp() {
+        prevLoader = G.hook.points.replace(NetworkLoader::class, TestNetworkLoader::class)
     }
 
-    fun tearDown() {
-        G.hook.restoreToMark()
+    @AfterClass fun tearDown() {
+        G.hook.points.replace(NetworkLoader::class, prevLoader)
     }
 
     @Test fun test() {
