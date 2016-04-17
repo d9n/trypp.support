@@ -1,7 +1,7 @@
-# Hook - A Plugin Library
+# Hook - A Plugin Framework
 
-**Hook** is a Kotlin library that makes it easy for your project to support plugins. It is part of
-the `trypp.support` family.
+**Hook** is a collection of classes that makes it easy for your project to support plugins, e.g.
+code hooks which external contributors can modify later.
 
 The library exposes two concepts: **hook points** and **hook groups**.
 
