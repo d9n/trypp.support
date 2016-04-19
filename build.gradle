@@ -1,11 +1,11 @@
 group 'trypp.support'
-version '1.0-SNAPSHOT'
+version '0.1-SNAPSHOT'
 
 buildscript {
     ext {
         kotlin_version = "1.0.1"
         testng_version = "6.9.+"
-        truth_version = "+"
+        truth_version = "0.28"
     }
 
     repositories {
@@ -33,5 +33,14 @@ subprojects {
 
     test {
         useTestNG()
+    }
+
+    apply plugin: 'maven-publish'
+    publishing {
+        publications {
+            mavenJava(MavenPublication) {
+                from components.java
+            }
+        }
     }
 }

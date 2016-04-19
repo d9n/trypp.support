@@ -3,51 +3,52 @@
 **Hook** is a collection of classes that makes it easy for your project to support plugins, e.g.
 code hooks which external contributors can modify later.
 
-The library exposes two concepts: **hook points** and **hook groups**.
+## Overview
 
-A **hook point** is essentially an interface / implementation pair (see also: the
-[Service](http://gameprogrammingpatterns.com/service-locator.html) pattern). A **hook group**,
+The library exposes two concepts: **services** and **extensions**.
+
+A **service** is essentially an interface / implementation pair (see also: the
+[Service](http://gameprogrammingpatterns.com/service-locator.html) pattern). An **extension**,
 similarly, is an interface paired with a list of zero or more implementations.
 
-**Hook points** and **hook groups** both act as _hooks_ for providing implementations later.
-A hook point represents a standalone component, while a hook group represents a list of such
-components.
+**Services** and **extensions** both act as _hooks_ for providing implementations later.
+A service represents a standalone component, while an extension represents a list of components.
 
 ```kotlin
-hookPoint.doSomething()
+service.doSomething()
 
-for (hookPoint in hookGroup) {
-   hookPoint.doSomething()
+for (extension in extensions) {
+   extension.doSomething()
 }
 ```
 
-An application must always provide a default implementation for any **hook points** it creates. In
-contrast, **hook groups** are often left empty (but an application can populate it with some
+An application must always provide a default implementation for any **services** it creates. In
+contrast, **extensions** are often left empty (but an application can populate it with some
 initial implementations if it wants to).
 
 ## Creating Hooks
 
 To get started, an application should create an instance of a `Hook` registry class. From there, it
-can register hook points and groups.
+can register services and extensions.
 
 ```kotlin
 val hook = Hook()
-hook.points.create(Logger::class, DefaultLogger::class)
-hook.groups.create(Dictionary::class)
+hook.services.create(Logger::class, DefaultLogger::class)
+hook.extensions.create(Dictionary::class)
 
 // Updating hooks...
-hook.points.replace(Logger::class, NoOpLogger::class);
-hook.groups.add(Dictionary::class, CommonWords::class);
-hook.groups.add(Dictionary::class, SwearWords::class);
+hook.services.replace(Logger::class, NoOpLogger::class);
+hook.extensions.add(Dictionary::class, CommonWords::class);
+hook.extensions.add(Dictionary::class, SwearWords::class);
 
 // Using hooks...
-hook.points[Logger::class].logError("This should never happen.")
-val isValidSpelling = hook.groups[Dictionary::class].any { it.hasWord(word) }
+hook.services[Logger::class].logError("This should never happen.")
+val isValidSpelling = hook.extensions[Dictionary::class].any { it.hasWord(word) }
 ```
 
-## Hook Point
+## Service
 
-When an application exposes a **hook point**, it allows a plugin to later replace the
+When an application exposes a **service**, it allows a plugin to later replace the
 implementation entirely.
 
 This is useful when the application developer wants to provide a simple, default component in their
@@ -58,7 +59,7 @@ low-resolution textures, while a dedicated modder might provide fancy 4K texture
 Loggers are another possible example of something that can be replaced at runtime:
 
 ```kotlin
-hook.points[Logger::class].logError("This should never happen.")
+hook.services[Logger::class].logError("This should never happen.")
 ```
 
 The above syntax works just fine, but a nice convention to follow with any interface you expose as a
@@ -76,7 +77,7 @@ val hook = Hook()
 interface Logger {
     companion object {
         fun get() {
-            return G.hook.points[Logger::class]
+            return G.hook.services[Logger::class]
         }
     }
 }
@@ -86,7 +87,7 @@ interface Logger {
 Logger.get().logError("This should never happen.")
 ```
 
-Usually, a hook point implementation class should have an empty constructor. However, if your class
+Usually, a service implementation class should have an empty constructor. However, if your class
 has a constructor that takes its interface as a sole argument, `Hook` will pass in the current
 implementation which you can use a delegation pattern.
 
@@ -113,12 +114,12 @@ class TimestampLogger(wrapped: Logger) : Logger {
 }
 ```
 
-## Group
+## Extension
 
-When an application exposes a **hook group**, it's allows plugins to populate it with additional
-entries. When the application runs, it can loop through the group and call methods on them.
+When an application exposes an **extension**, it's allows plugins to populate it with additional
+entries. When the application runs, it can loop through the extensions and call methods on them.
 
-Groups are useful for a variety of purposes: you can run multiple transforms on some original data,
+Extensions are useful for a variety of purposes: you can run multiple transforms on some original data,
 or run a bunch of tests to reject some input. You can loop through factories that provide new
 values, such as, perhaps, new character classes for a game.
 
@@ -126,38 +127,38 @@ In this example, we allow plugins to extend our application's initial dictionary
 
 ```kotlin
 fun isValidWord(word: String): Boolean {
-    return hook.groups[Dictionary::class].any { it.hasWord(word) }
+    return hook.extensions[Dictionary::class].any { it.hasWord(word) }
 }
 ```
 
-Like hook points, there's a recommended convention you can use for groups:
+Like services, there's a recommended convention you can use for extensions:
 ```kotlin
 # Dictionary.kt
 
 interface Dictionary {
     companion object {
         fun getAll() {
-           return G.hook.groups[Dictionary::class];
+           return G.hook.extensions[Dictionary::class];
         }
     }
 }
 
 // Elsewhere...
 
-val showUnderline = Dictionay.getAll().none { it.hasWord(word) }
+val showUnderline = Dictionary.getAll().none { it.hasWord(word) }
 ```
 
 ## Jar of Hooks
 
 The framework supports loading external `jar` files that declare their contents through a
 manifest file. This file should be found in the jar's `META-INF` directory and be called
-`hooks.json`. By declaring all hook points and groups in a manifest file, the `Hook` class can be
+`hooks.json`. By declaring all services and extensions in a manifest file, the `Hook` class can be
 pointed at the `jar` file and automatically register all of its dependencies.
 
 For example, say we created a plugin which provides its own custom logger which prepends a timestamp
 to each line, plus a log listener that records all log lines to a backup file.
 
-Let's say we had an application with all code in a package called "hook.sample"
+Let's say we had an application with all code in a package called `hook.sample`:
 
 ```
 # userdata/plugins/logger-plugin.jar
@@ -173,10 +174,10 @@ META-INF/
 # hooks.json
 
 name: "Logger Plugin",
-points: [
+services: [
     { interface: "hook.sample.Logger", implementation: "TimestampLogger" }
 ]
-groups: [
+extensions: [
     { interface: "hook.sample.LogListener", implementation: "LogHistory" }
 ]
 ```
@@ -234,11 +235,11 @@ class SomeTest {
     var prevLoader: NetworkLoader by Delegates.notNull()
 
     @BeforeClass fun setUp() {
-        prevLoader = G.hook.points.replace(NetworkLoader::class, TestNetworkLoader::class)
+        prevLoader = G.hook.services.replace(NetworkLoader::class, TestNetworkLoader::class)
     }
 
     @AfterClass fun tearDown() {
-        G.hook.points.replace(NetworkLoader::class, prevLoader)
+        G.hook.services.replace(NetworkLoader::class, prevLoader)
     }
 
     @Test fun test() {

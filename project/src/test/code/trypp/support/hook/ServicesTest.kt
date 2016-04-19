@@ -3,12 +3,12 @@ package trypp.support.hook
 import com.google.common.truth.Truth.assertThat
 import org.testng.Assert
 import org.testng.annotations.Test
-import trypp.support.hook.exceptions.BadHookPointClassException
-import trypp.support.hook.exceptions.HookPointExistsException
-import trypp.support.hook.exceptions.HookPointNotFoundException
+import trypp.support.hook.exceptions.BadServiceClassException
+import trypp.support.hook.exceptions.ServiceExistsException
+import trypp.support.hook.exceptions.ServiceNotFoundException
 import trypp.support.kotlin.clear
 
-class HookPointsTest {
+class ServicesTest {
 
     interface Logger {
         fun log(message: String)
@@ -35,6 +35,12 @@ class HookPointsTest {
         }
     }
 
+    class ToUpperLogger(val wrapped: Logger) : Logger {
+        override fun log(message: String) {
+            wrapped.log(message.toUpperCase())
+        }
+    }
+
     abstract class Counter {
         private var _count = 0
         val count: Int
@@ -58,9 +64,9 @@ class HookPointsTest {
     }
 
     @Test fun registeringHookPointByClassWorks() {
-        val hookPoints = HookPoints()
-        hookPoints.create(Counter::class, OneCounter::class)
-        val getCounter = { -> hookPoints[Counter::class] }
+        val services = Services()
+        services.create(Counter::class, OneCounter::class)
+        val getCounter = { -> services[Counter::class] }
 
         assertThat(getCounter().count).isEqualTo(0)
         getCounter().countUp()
@@ -68,12 +74,12 @@ class HookPointsTest {
     }
 
     @Test fun registeringHookPointByInstanceWorks() {
-        val hookPoints = HookPoints()
-        hookPoints.create(Counter::class, object : Counter() {
+        val services = Services()
+        services.create(Counter::class, object : Counter() {
             override val countBy: Int
                 get() = 3
         })
-        val getCounter = { -> hookPoints[Counter::class] }
+        val getCounter = { -> services[Counter::class] }
 
         assertThat(getCounter().count).isEqualTo(0)
         getCounter().countUp()
@@ -81,89 +87,93 @@ class HookPointsTest {
     }
 
     @Test fun replacingHookPointByClassWorks() {
-        val hookPoints = HookPoints()
-        hookPoints.create(Counter::class, OneCounter::class)
-        val getCounter = { -> hookPoints.get(Counter::class) }
+        val services = Services()
+        services.create(Counter::class, OneCounter::class)
+        val getCounter = { -> services.get(Counter::class) }
 
-        hookPoints.replace(Counter::class, TwoCounter::class)
+        services.replace(Counter::class, TwoCounter::class)
         assertThat(getCounter().count).isEqualTo(0)
         getCounter().countUp()
         assertThat(getCounter().count).isEqualTo(2)
     }
 
     @Test fun replacingHookPointWithWrappingClassWorks() {
-        val hookPoints = HookPoints()
+        val services = Services()
         val lastLine = StringBuilder()
-        hookPoints.create(Logger::class, TestLogger(lastLine))
-        hookPoints.replace(Logger::class, CountingLogger::class)
-        val getLogger = { -> hookPoints.get(Logger::class) }
+        services.create(Logger::class, TestLogger(lastLine))
+        services.replace(Logger::class, CountingLogger::class)
+        val getLogger = { -> services.get(Logger::class) }
 
         assertThat(lastLine.toString()).isEmpty()
         getLogger().log("This is a test")
         assertThat(lastLine.toString()).isEqualTo("0: This is a test")
         getLogger().log("This is only a test")
         assertThat(lastLine.toString()).isEqualTo("1: This is only a test")
+
+        services.replace(Logger::class, ToUpperLogger::class)
+        getLogger().log("of the emergency broadcast system")
+        assertThat(lastLine.toString()).isEqualTo("2: OF THE EMERGENCY BROADCAST SYSTEM")
     }
 
     @Test fun creatingSameHookPointTwiceThrowsException() {
-        val hookPoints = HookPoints()
-        hookPoints.create(Counter::class, OneCounter::class)
+        val services = Services()
+        services.create(Counter::class, OneCounter::class)
         try {
-            hookPoints.create(Counter::class, TwoCounter::class)
+            services.create(Counter::class, TwoCounter::class)
             Assert.fail()
         }
-        catch (e: HookPointExistsException) {
+        catch (e: ServiceExistsException) {
         }
 
         try {
-            hookPoints.create(Counter::class, object : Counter() {
+            services.create(Counter::class, object : Counter() {
                 override val countBy: Int
                     get() = -1
             })
             Assert.fail()
         }
-        catch (e: HookPointExistsException) {
+        catch (e: ServiceExistsException) {
         }
     }
 
     @Test fun replacingNonExistingHookPointThrowsException() {
-        val hookPoints = HookPoints()
+        val services = Services()
         try {
-            hookPoints.replace(Counter::class, OneCounter::class)
+            services.replace(Counter::class, OneCounter::class)
             Assert.fail()
         }
-        catch (e: HookPointNotFoundException) {
+        catch (e: ServiceNotFoundException) {
         }
 
         try {
-            hookPoints.replace(Counter::class, object : Counter() {
+            services.replace(Counter::class, object : Counter() {
                 override val countBy: Int
                     get() = -2
             })
             Assert.fail()
         }
-        catch (e: HookPointNotFoundException) {
+        catch (e: ServiceNotFoundException) {
         }
     }
 
     @Test fun createImplClassWithNoValidConstructorThrowsException() {
-        val hookPoints = HookPoints()
+        val services = Services()
         try {
-            hookPoints.create(Logger::class, TestLogger::class)
+            services.create(Logger::class, TestLogger::class)
             Assert.fail()
         }
-        catch (e: BadHookPointClassException) {
+        catch (e: BadServiceClassException) {
         }
     }
 
     @Test fun replaceImplClassWithNoValidConstructorThrowsException() {
-        val hookPoints = HookPoints()
-        hookPoints.create(Logger::class, DefaultLogger::class)
+        val services = Services()
+        services.create(Logger::class, DefaultLogger::class)
         try {
-            hookPoints.replace(Logger::class, TestLogger::class)
+            services.replace(Logger::class, TestLogger::class)
             Assert.fail()
         }
-        catch (e: BadHookPointClassException) {
+        catch (e: BadServiceClassException) {
         }
     }
 }

@@ -1,0 +1,11 @@
+repositories {
+    mavenLocal()
+}
+
+dependencies {
+    compile "trypp.support:project:+"
+}
+
+apply plugin: 'application'
+
+mainClassName = "trypp.screensaver.ScreenSaver"

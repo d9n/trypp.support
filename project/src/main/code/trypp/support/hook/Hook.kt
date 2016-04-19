@@ -1,26 +1,26 @@
 package trypp.support.hook
 
 /**
- * Registry for all [HookPoints] and [HookGroups].
+ * Registry for all [Components] and [Extensions].
  *
  * To start using:
  *
  * ```
  * val hook = Hook()
- * hook.points.create(Logger::class, DefaultLogger::class)
- * hook.groups.create(Dictionary::class)
+ * hook.services.create(Logger::class, DefaultLogger::class)
+ * hook.extensions.create(Dictionary::class)
  *
  * // Updating hooks...
- * hook.points.replace(Logger::class, NoOpLogger::class);
- * hook.groups.add(Dictionary::class, CommonWords::class);
- * hook.groups.add(Dictionary::class, SwearWords::class);
+ * hook.services.replace(Logger::class, NoOpLogger::class);
+ * hook.extensions.add(Dictionary::class, CommonWords::class);
+ * hook.extensions.add(Dictionary::class, SwearWords::class);
  *
  * // Using hooks...
- * hook.points[Logger::class].logError("This should never happen.")
- * val isValidSpelling = hook.groups[Dictionary::class].any { it.hasWord(word) }
+ * hook.services[Logger::class].logError("This should never happen.")
+ * val isValidSpelling = hook.extensions[Dictionary::class].any { it.hasWord(word) }
  * ```
  */
 class Hook {
-    val points = HookPoints()
-    val groups = HookGroups()
+    val services = Services()
+    val extensions = Extensions()
 }

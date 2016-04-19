@@ -1,8 +1,8 @@
 package trypp.support.hook
 
-import trypp.support.hook.exceptions.BadHookPointClassException
-import trypp.support.hook.exceptions.HookPointExistsException
-import trypp.support.hook.exceptions.HookPointNotFoundException
+import trypp.support.hook.exceptions.BadServiceClassException
+import trypp.support.hook.exceptions.ServiceExistsException
+import trypp.support.hook.exceptions.ServiceNotFoundException
 import trypp.support.kotlin.kClass
 import java.util.*
 import kotlin.reflect.KClass
@@ -12,12 +12,12 @@ import kotlin.reflect.defaultType
  * A collection of hooks points for replacing with updated implementations. See [Hook] for more
  * information.
  */
-class HookPoints internal constructor() {
+class Services internal constructor() {
     private val points = java.util.HashMap<KClass<out Any>, Any>()
 
     fun <T : Any> create(base: KClass<T>, defaultImpl: KClass<out T>) {
         if (points.containsKey(base)) {
-            throw HookPointExistsException(base, get(base).kClass, defaultImpl)
+            throw ServiceExistsException(base, get(base).kClass, defaultImpl)
         }
 
         try {
@@ -25,13 +25,13 @@ class HookPoints internal constructor() {
             points.put(base, instance)
         }
         catch (e: NoSuchElementException) {
-            throw BadHookPointClassException(defaultImpl)
+            throw BadServiceClassException(defaultImpl)
         }
     }
 
     fun <T : Any> create(base: KClass<T>, defaultInstance: T) {
         if (points.containsKey(base)) {
-            throw HookPointExistsException(base, get(base).kClass, defaultInstance.kClass)
+            throw ServiceExistsException(base, get(base).kClass, defaultInstance.kClass)
         }
 
         points.put(base, defaultInstance);
@@ -41,7 +41,7 @@ class HookPoints internal constructor() {
     @Suppress("UNCHECKED_CAST")
     operator fun <T : Any> get(base: KClass<T>): T {
         if (!points.containsKey(base)) {
-            throw HookPointNotFoundException(base)
+            throw ServiceNotFoundException(base)
         }
         return points[base] as T
     }
@@ -59,7 +59,7 @@ class HookPoints internal constructor() {
                 newInstance = impl.constructors.first { it.parameters.size == 0 }.call()
             }
             catch (e: NoSuchElementException) {
-                throw BadHookPointClassException(impl)
+                throw BadServiceClassException(impl)
             }
         }
 

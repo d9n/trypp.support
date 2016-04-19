@@ -1,20 +1,20 @@
 package trypp.support.hook
 
-import trypp.support.hook.exceptions.BadHookGroupClassException
-import trypp.support.hook.exceptions.HookGroupExistsException
-import trypp.support.hook.exceptions.HookGroupNotFoundException
+import trypp.support.hook.exceptions.BadExtensionClassException
+import trypp.support.hook.exceptions.ExtensionExistsException
+import trypp.support.hook.exceptions.ExtensionNotFoundException
 import java.util.*
 import kotlin.reflect.KClass
 
 /**
  * A collection of hooks for looping through. See [Hook] for more information.
  */
-class HookGroups internal constructor() {
+class Extensions internal constructor() {
     private val groups = java.util.HashMap<KClass<out Any>, List<Any>>()
 
     fun <T : Any> create(base: KClass<T>) {
         if (groups.containsKey(base)) {
-            throw HookGroupExistsException(base)
+            throw ExtensionExistsException(base)
         }
 
         groups.put(base, ArrayList<Any>(1))
@@ -31,7 +31,7 @@ class HookGroups internal constructor() {
             group.add(instance)
         }
         catch (e: NoSuchElementException) {
-            throw BadHookGroupClassException(impl)
+            throw BadExtensionClassException(impl)
         }
 
     }
@@ -45,7 +45,7 @@ class HookGroups internal constructor() {
     @Suppress("UNCHECKED_CAST")
     private fun <T : Any> getAsList(base: KClass<T>): MutableList<T> {
         if (!groups.containsKey(base)) {
-            throw HookGroupNotFoundException(base)
+            throw ExtensionNotFoundException(base)
         }
         return groups[base] as MutableList<T>
     }

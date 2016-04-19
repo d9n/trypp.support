@@ -3,11 +3,11 @@ package trypp.support.hook
 import com.google.common.truth.Truth.assertThat
 import org.testng.Assert
 import org.testng.annotations.Test
-import trypp.support.hook.exceptions.BadHookGroupClassException
-import trypp.support.hook.exceptions.HookGroupExistsException
-import trypp.support.hook.exceptions.HookGroupNotFoundException
+import trypp.support.hook.exceptions.BadExtensionClassException
+import trypp.support.hook.exceptions.ExtensionExistsException
+import trypp.support.hook.exceptions.ExtensionNotFoundException
 
-class HookGroupsTest {
+class ExtensionsTest {
 
     abstract class WordMatcher {
         abstract fun match(word: String): Boolean
@@ -35,21 +35,21 @@ class HookGroupsTest {
     }
 
     @Test fun registeringHookGroupByClassWorks() {
-        val hookGroups = HookGroups()
-        hookGroups.create(WordMatcher::class)
-        val getMatchers = { -> hookGroups[WordMatcher::class] }
+        val extensions = Extensions()
+        extensions.create(WordMatcher::class)
+        val getMatchers = { -> extensions[WordMatcher::class] }
 
         assertThat(getMatchers().any { it.match("l") }).isFalse()
         assertThat(getMatchers().any { it.match("eight") }).isFalse()
         assertThat(getMatchers().any { it.match(":(") }).isFalse()
 
-        hookGroups.add(WordMatcher::class, DigitMatcher::class)
+        extensions.add(WordMatcher::class, DigitMatcher::class)
 
         assertThat(getMatchers().any { it.match("l") }).isFalse()
         assertThat(getMatchers().any { it.match("eight") }).isTrue()
         assertThat(getMatchers().any { it.match(":(") }).isFalse()
 
-        hookGroups.add(WordMatcher::class, LetterMatcher::class)
+        extensions.add(WordMatcher::class, LetterMatcher::class)
 
         assertThat(getMatchers().any { it.match("l") }).isTrue()
         assertThat(getMatchers().any { it.match("eight") }).isTrue()
@@ -57,15 +57,15 @@ class HookGroupsTest {
     }
 
     @Test fun registeringHookGroupByInstanceWorks() {
-        val hookGroups = HookGroups()
-        hookGroups.create(WordMatcher::class)
-        val getMatchers = { -> hookGroups[WordMatcher::class] }
+        val extensions = Extensions()
+        extensions.create(WordMatcher::class)
+        val getMatchers = { -> extensions[WordMatcher::class] }
 
         assertThat(getMatchers().any { it.match("l") }).isFalse()
         assertThat(getMatchers().any { it.match("eight") }).isFalse()
         assertThat(getMatchers().any { it.match(":(") }).isFalse()
 
-        hookGroups.add(WordMatcher::class, object : WordMatcher() {
+        extensions.add(WordMatcher::class, object : WordMatcher() {
             override fun match(word: String): Boolean {
                 return word == ":)"
             }
@@ -77,34 +77,34 @@ class HookGroupsTest {
     }
 
     @Test fun creatingSameHookGroupTwiceThrowsException() {
-        val hookGroups = HookGroups()
-        hookGroups.create(WordMatcher::class)
+        val extensions = Extensions()
+        extensions.create(WordMatcher::class)
         try {
-            hookGroups.create(WordMatcher::class)
+            extensions.create(WordMatcher::class)
             Assert.fail()
         }
-        catch (e: HookGroupExistsException) {
+        catch (e: ExtensionExistsException) {
         }
     }
 
     @Test fun addingToNonExistingHookGroupThrowsException() {
-        val hookGroups = HookGroups()
+        val extensions = Extensions()
         try {
-            hookGroups.add(WordMatcher::class, LetterMatcher::class)
+            extensions.add(WordMatcher::class, LetterMatcher::class)
             Assert.fail()
         }
-        catch (e: HookGroupNotFoundException) {
+        catch (e: ExtensionNotFoundException) {
         }
     }
 
     @Test fun addImplClassWithNoValidConstructorThrowsException() {
-        val hookGroups = HookGroups()
-        hookGroups.create(WordMatcher::class)
+        val extensions = Extensions()
+        extensions.create(WordMatcher::class)
         try {
-            hookGroups.add(WordMatcher::class, SingleWordMatcher::class)
+            extensions.add(WordMatcher::class, SingleWordMatcher::class)
             Assert.fail()
         }
-        catch (e: BadHookGroupClassException) {
+        catch (e: BadExtensionClassException) {
         }
     }
 
