@@ -87,15 +87,15 @@ interface Logger {
 Logger.get().logError("This should never happen.")
 ```
 
-Usually, a service implementation class should have an empty constructor. However, if your class
-has a constructor that takes its interface as a sole argument, `Hook` will pass in the current
-implementation which you can use a delegation pattern.
+Usually, you will define a service with an empty constructor. However, you can also specify a
+delegating service, one whose constructor takes the previously registered service. In this case,
+`Hook` will pass in the previously registered service which you can use however you want.
 
 ```kotlin
 # TimestampLogger.kt
 
 // Add a timestamp to the beginning of all log messages!
-class TimestampLogger(wrapped: Logger) : Logger {
+class TimestampLogger(val wrapped: Logger) : Logger {
     override fun logDebug(message: String) {
         wrapped.logDebug(decorate(message));
     }
@@ -145,7 +145,7 @@ interface Dictionary {
 
 // Elsewhere...
 
-val showUnderline = Dictionary.getAll().none { it.hasWord(word) }
+val underlineWord = Dictionary.getAll().none { it.hasWord(word) }
 ```
 
 ## Jar of Hooks
