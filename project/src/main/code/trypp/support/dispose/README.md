@@ -7,10 +7,20 @@ _Destructing classes in a garbage collected world_
 **Disposer** and **Disposable** are two classes which work together to allow for when you need to
 explicitly clean up resources in Java or Kotlin.
 
-In most cases the JVM Garbage Collector works fine, but there are times where you need to mark a
-class as dead at which point it should release some resources. Furthermore, code is naturally
-hierarchical (`A` contains `B` contains `C`), and it would be nice if destroying the parent object
-automatically released any children objects as well.
+```kotlin
+interface Disposable {
+    fun dispose()
+}
+
+class Disposer {
+    fun register(parent: Disposable, child: Disposable)
+}
+```
+
+In most cases, you can rely on the Garbage Collector to handle releasing your memory allocations,
+but there are also times where you need to mark a class as dead at which point it should release
+some resources. Furthermore, code is naturally hierarchical (`A` contains `B` contains `C`), and it
+would be nice if destroying the parent object automatically released any children objects as well.
 
 Use a `Disposer` to register any class that implements `Disposable` and then `dispose` them later.
 Note that every `Disposable` class has a `dispose` method you could potentially call directly, but

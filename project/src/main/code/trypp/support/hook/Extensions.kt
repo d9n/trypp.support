@@ -7,9 +7,10 @@ import java.util.*
 import kotlin.reflect.KClass
 
 /**
- * A collection of hooks for looping through. See [Hook] for more information.
+ * A collection of class implementations, useful for allowing third parties to extend an
+ * application.
  */
-class Extensions internal constructor() {
+class Extensions {
     private val groups = java.util.HashMap<KClass<out Any>, List<Any>>()
 
     fun <T : Any> create(base: KClass<T>) {

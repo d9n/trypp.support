@@ -9,10 +9,13 @@ import kotlin.reflect.KClass
 import kotlin.reflect.defaultType
 
 /**
- * A collection of hooks points for replacing with updated implementations. See [Hook] for more
- * information.
+ * A collection of services, which is basically a mapping of interface to implementation pairs.
+ * Though conceptually simple, the
+ * [Service pattern](http://gameprogrammingpatterns.com/service-locator.html) has many advantages
+ * over the traditional Singleton pattern, not the least of which it can act as a main home for the
+ * rest of the singletons in your application.
  */
-class Services internal constructor() {
+class Services {
     private val points = java.util.HashMap<KClass<out Any>, Any>()
 
     fun <T : Any> create(base: KClass<T>, defaultImpl: KClass<out T>) {

@@ -1,12 +1,14 @@
 package trypp.screensaver
 
-import trypp.support.hook.Hook
+import trypp.support.hook.Extensions
+import trypp.support.hook.Services
 
 /**
  * Global variables and functions
  */
 class G {
     companion object {
-        val hook = Hook()
+        val services = Services()
+        val extensions = Extensions()
     }
 }

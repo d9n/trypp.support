@@ -63,10 +63,18 @@ class ServicesTest {
             get() = 2
     }
 
+    @Test fun lambdaExample() {
+        val indirectPrint1 = { -> println("Test #1") }
+        val indirectPrint2 = { println("Test #2") }
+
+        indirectPrint1()
+        indirectPrint2()
+    }
+
     @Test fun registeringHookPointByClassWorks() {
         val services = Services()
         services.create(Counter::class, OneCounter::class)
-        val getCounter = { -> services[Counter::class] }
+        val getCounter = { services[Counter::class] }
 
         assertThat(getCounter().count).isEqualTo(0)
         getCounter().countUp()

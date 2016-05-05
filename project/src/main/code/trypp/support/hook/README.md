@@ -1,7 +1,8 @@
 # Hook - A Plugin Framework
 
-**Hook** is a collection of classes that makes it easy for your project to support plugins, e.g.
-code hooks which external contributors can modify later.
+**Hook** is a collection of classes that provide code hooks which you can define an initial
+implementation for but that can be overloaded later. This can be useful for modding and also unit
+testing.
 
 ## Overview
 
@@ -26,40 +27,37 @@ An application must always provide a default implementation for any **services**
 contrast, **extensions** are often left empty (but an application can populate it with some
 initial implementations if it wants to).
 
-## Creating Hooks
+## Getting Started
 
-To get started, an application should create an instance of a `Hook` registry class. From there, it
-can register services and extensions.
+An application likely will want to create two singletons, one for `Services` and one for
+`Extensions`.
 
 ```kotlin
-val hook = Hook()
-hook.services.create(Logger::class, DefaultLogger::class)
-hook.extensions.create(Dictionary::class)
+val services = Services()
+val extensions = Extensions()
 
-// Updating hooks...
-hook.services.replace(Logger::class, NoOpLogger::class);
-hook.extensions.add(Dictionary::class, CommonWords::class);
-hook.extensions.add(Dictionary::class, SwearWords::class);
+services.create(Logger::class, DefaultLogger::class)
+extensions.create(Dictionary::class)
 
-// Using hooks...
-hook.services[Logger::class].logError("This should never happen.")
-val isValidSpelling = hook.extensions[Dictionary::class].any { it.hasWord(word) }
+// Later...
+services.replace(Logger::class, NoOpLogger::class);
+extensions.add(Dictionary::class, CommonWords::class);
+extensions.add(Dictionary::class, SwearWords::class);
+
+// In use...
+services[Logger::class].logError("This should never happen.")
+val isValidSpelling = extensions[Dictionary::class].any { it.hasWord(word) }
 ```
 
 ## Service
 
-When an application exposes a **service**, it allows a plugin to later replace the
-implementation entirely.
+When an application exposes a **service**, it allows someone to later replace the implementation
+entirely.
 
-This is useful when the application developer wants to provide a simple, default component in their
-own code while allowing the community to replace it later. For example, you might imagine replacing
-a factory interface for creating generated assets. Your default factory might produce simple,
-low-resolution textures, while a dedicated modder might provide fancy 4K textures.
-
-Loggers are another possible example of something that can be replaced at runtime:
+Loggers are a common example for a service:
 
 ```kotlin
-hook.services[Logger::class].logError("This should never happen.")
+services[Logger::class].logError("This should never happen.")
 ```
 
 The above syntax works just fine, but a nice convention to follow with any interface you expose as a
@@ -67,8 +65,8 @@ hook is to provide a helper static method.
 ```kotlin
 # G.kt
 
-// Create a global singleton for this application's hooks
-val hook = Hook()
+// Create a global singleton for this application's services
+val services = Services()
 ```
 
 ```kotlin
@@ -77,7 +75,7 @@ val hook = Hook()
 interface Logger {
     companion object {
         fun get() {
-            return G.hook.services[Logger::class]
+            return G.services[Logger::class]
         }
     }
 }
@@ -89,7 +87,8 @@ Logger.get().logError("This should never happen.")
 
 Usually, you will define a service with an empty constructor. However, you can also specify a
 delegating service, one whose constructor takes the previously registered service. In this case,
-`Hook` will pass in the previously registered service which you can use however you want.
+the new service will be passed in the previously registered service which you can use however you
+want.
 
 ```kotlin
 # TimestampLogger.kt
@@ -116,29 +115,34 @@ class TimestampLogger(val wrapped: Logger) : Logger {
 
 ## Extension
 
-When an application exposes an **extension**, it's allows plugins to populate it with additional
-entries. When the application runs, it can loop through the extensions and call methods on them.
+When an application exposes an **extension**, it's allows anyone to populate it with additional
+entries later. This is particularly useful for modding. When the application runs, it can loop
+through the extensions and call methods on them.
 
-Extensions are useful for a variety of purposes: you can run multiple transforms on some original data,
-or run a bunch of tests to reject some input. You can loop through factories that provide new
+Extensions are useful for a variety of purposes: you can run multiple transforms on some original
+data, or run a bunch of tests to reject some input. You can loop through factories that provide new
 values, such as, perhaps, new character classes for a game.
 
 In this example, we allow plugins to extend our application's initial dictionary:
 
 ```kotlin
 fun isValidWord(word: String): Boolean {
-    return hook.extensions[Dictionary::class].any { it.hasWord(word) }
+    return extensions[Dictionary::class].any { it.hasWord(word) }
 }
 ```
 
 Like services, there's a recommended convention you can use for extensions:
 ```kotlin
+# G.kt
+
+val extensions = Extensions()
+
 # Dictionary.kt
 
 interface Dictionary {
     companion object {
         fun getAll() {
-           return G.hook.extensions[Dictionary::class];
+           return G.extensions[Dictionary::class];
         }
     }
 }
@@ -148,17 +152,15 @@ interface Dictionary {
 val underlineWord = Dictionary.getAll().none { it.hasWord(word) }
 ```
 
-## Jar of Hooks
+## Plugin Jar
 
 The framework supports loading external `jar` files that declare their contents through a
 manifest file. This file should be found in the jar's `META-INF` directory and be called
-`hooks.json`. By declaring all services and extensions in a manifest file, the `Hook` class can be
-pointed at the `jar` file and automatically register all of its dependencies.
+`plugin.json`. By declaring all services and extensions in a manifest file, the `Plugin` class can
+be pointed at the `jar` file and automatically register all of its dependencies.
 
 For example, say we created a plugin which provides its own custom logger which prepends a timestamp
 to each line, plus a log listener that records all log lines to a backup file.
-
-Let's say we had an application with all code in a package called `hook.sample`:
 
 ```
 # userdata/plugins/logger-plugin.jar
@@ -167,11 +169,11 @@ src/main/
    TimestampLogger.kt
    LogHistory.kt
 META-INF/
-   hooks.json
+   plugin.json
 ```
 
 ```json
-# hooks.json
+# plugin.json
 
 name: "Logger Plugin",
 services: [
@@ -184,43 +186,17 @@ extensions: [
 
 Once a jar is prepared, loading it is trivial.
 ```kotlin
-val hook = Hook()
+val services = Services()
+val extensions = Extensions()
+val pluginLoader = PluginLoader(services, extensions)
 // ... initialize ...
 
-hook.loadJar("/path/to/plugin.jar")
-```
-
-## Plugin Conflict
-
-Two plugins may conflict with one another if both require changing the same hook. If this happens,
-`loadJar` will throw a `HookConflictException`. In such a case, you may want to consider disabling
-all plugins temporarily and asking the user to disable some plugins.
-
-The `Hook` class contains `pushMark`, `popMark` and `restoreToMark` methods to allow your
-application to continue even in the case of plugin conflicts. `restoreToMark` will revert values
-back to the way they were before, while `popMark` will remove the mark but leave values the same.
-
-```kotlin
-val hook = Hook()
-// ... initialize ...
-
-hook.pushMark()
-try {
-    val pluginsDir = File("/path/to/plugins")
-    for (file in FileTreeWalk(pluginsDir) {
-        if (file.extension == "jar") {
-            hooks.loadJar(file)
-        }
-    }
-}
-catch (e: HookException) {
-    hook.restoreToMark()
-}
+pluginLoader.loadJar("/path/to/plugin.jar")
 ```
 
 ## Unit testing
 
-`Hook` can be used to help with unit testing, since it effectively offers a way to switch out
+The `Service` can be used to help with unit testing, since it effectively offers a way to switch out
 implementations of major components at test time.
 
 Keep in mind that explicit
@@ -235,11 +211,11 @@ class SomeTest {
     var prevLoader: NetworkLoader by Delegates.notNull()
 
     @BeforeClass fun setUp() {
-        prevLoader = G.hook.services.replace(NetworkLoader::class, TestNetworkLoader::class)
+        prevLoader = G.services.replace(NetworkLoader::class, TestNetworkLoader::class)
     }
 
     @AfterClass fun tearDown() {
-        G.hook.services.replace(NetworkLoader::class, prevLoader)
+        G.services.replace(NetworkLoader::class, prevLoader)
     }
 
     @Test fun test() {

@@ -8,4 +8,4 @@ dependencies {
 
 apply plugin: 'application'
 
-mainClassName = "trypp.screensaver.ScreenSaver"
+mainClassName = "trypp.screensaver.ScreenSaverApplication"
