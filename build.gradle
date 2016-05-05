@@ -12,35 +12,33 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath "org.jetbrains.extensions:extensions-gradle-plugin:$kotlin_version"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
 
-allprojects {
-    apply plugin: 'extensions'
-    repositories {
-        mavenCentral()
-    }
-    dependencies {
-        compile "org.jetbrains.extensions:extensions-stdlib:$kotlin_version"
-        compile "org.jetbrains.extensions:extensions-reflect:$kotlin_version"
-        testCompile "com.google.truth:truth:$truth_version"
-        testCompile "org.testng:testng:$testng_version"
-    }
+apply plugin: 'kotlin'
+repositories {
+    mavenCentral()
+}
+dependencies {
+    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
+    testCompile "com.google.truth:truth:$truth_version"
+    testCompile "org.testng:testng:$testng_version"
+}
 
-    sourceSets.main.kotlin.srcDirs += 'src/main/code'
-    sourceSets.test.kotlin.srcDirs += 'src/test/code'
+sourceSets.main.kotlin.srcDirs += 'src/main/code'
+sourceSets.test.kotlin.srcDirs += 'src/test/code'
 
-    test {
-        useTestNG()
-    }
+test {
+    useTestNG()
+}
 
-    apply plugin: 'maven-publish'
-    publishing {
-        publications {
-            mavenJava(MavenPublication) {
-                from components.java
-            }
+apply plugin: 'maven-publish'
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
         }
     }
 }
