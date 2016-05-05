@@ -12,18 +12,18 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath "org.jetbrains.extensions:extensions-gradle-plugin:$kotlin_version"
     }
 }
 
-subprojects {
-    apply plugin: 'kotlin'
+allprojects {
+    apply plugin: 'extensions'
     repositories {
         mavenCentral()
     }
     dependencies {
-        compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-        compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
+        compile "org.jetbrains.extensions:extensions-stdlib:$kotlin_version"
+        compile "org.jetbrains.extensions:extensions-reflect:$kotlin_version"
         testCompile "com.google.truth:truth:$truth_version"
         testCompile "org.testng:testng:$testng_version"
     }
