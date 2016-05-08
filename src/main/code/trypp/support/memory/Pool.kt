@@ -36,7 +36,8 @@ class Pool<T>(private val allocate: () -> T, private val reset: (T) -> Unit, cap
                 emptyCons = poolableClass.constructors.first { it.parameters.size == 0 }
             }
             catch(e: NoSuchElementException) {
-                throw IllegalArgumentException("Can't create pool of $poolableClass: No empty constructor")
+                throw IllegalArgumentException(
+                    "Can't create pool of $poolableClass: No empty constructor")
             }
 
             return Pool({ emptyCons.call() }, { it.reset() }, capacity)
