@@ -3,10 +3,10 @@ package trypp.support.pattern
 import com.google.common.truth.Truth.assertThat
 import org.testng.Assert
 import org.testng.annotations.Test
+import trypp.support.extensions.clear
 import trypp.support.pattern.exceptions.BadServiceClassException
 import trypp.support.pattern.exceptions.ServiceExistsException
 import trypp.support.pattern.exceptions.ServiceNotFoundException
-import trypp.support.extensions.clear
 
 class ServicesTest {
 
@@ -61,14 +61,6 @@ class ServicesTest {
     class TwoCounter : Counter() {
         override val countBy: Int
             get() = 2
-    }
-
-    @Test fun lambdaExample() {
-        val indirectPrint1 = { -> println("Test #1") }
-        val indirectPrint2 = { println("Test #2") }
-
-        indirectPrint1()
-        indirectPrint2()
     }
 
     @Test fun registeringHookPointByClassWorks() {
