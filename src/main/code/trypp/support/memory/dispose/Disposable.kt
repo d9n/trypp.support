@@ -1,4 +1,4 @@
-package trypp.support.dispose
+package trypp.support.memory.dispose
 
 /**
  * An interface to mark on classes that hold onto resources that should be explicitly let go of

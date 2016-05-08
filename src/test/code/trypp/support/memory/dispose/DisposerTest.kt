@@ -1,4 +1,4 @@
-package trypp.support.dispose
+package trypp.support.memory.dispose
 
 import com.google.common.truth.Truth.assertThat
 import org.testng.Assert

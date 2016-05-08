@@ -1,4 +1,4 @@
-package trypp.support.dispose
+package trypp.support.memory.dispose
 
 import trypp.support.extensions.kClass
 import java.util.*
