@@ -4,15 +4,6 @@ import com.google.common.truth.Truth.assertThat
 import org.testng.Assert
 import org.testng.annotations.Test
 
-private class PoolItem {
-    var resetCount = 0
-        private set
-
-    fun reset() {
-        resetCount++
-    }
-}
-
 class PoolTest {
 
     @Test fun grabNewAvoidsAllocation() {
@@ -30,6 +21,18 @@ class PoolTest {
 
         item = pool.grabNew()
         assertThat(allocationCount).isEqualTo(1)
+        assertThat(item.resetCount).isEqualTo(1)
+    }
+
+    @Test fun poolOfPoolableMethodWorksAsExpected() {
+        val pool = Pool.of(PoolItem::class)
+
+        var item = pool.grabNew()
+        assertThat(item.resetCount).isEqualTo(0)
+        pool.free(item)
+        assertThat(item.resetCount).isEqualTo(1)
+
+        item = pool.grabNew()
         assertThat(item.resetCount).isEqualTo(1)
     }
 
@@ -70,6 +73,7 @@ class PoolTest {
         assertThat(pool.resizable).isTrue()
 
         assertThat(pool.capacity).isEqualTo(2)
+        assertThat(pool.maxCapacity).isEqualTo(3)
         assertThat(allocationCount).isEqualTo(2)
 
         pool.grabNew()
@@ -77,6 +81,7 @@ class PoolTest {
         pool.grabNew()
 
         assertThat(pool.capacity).isEqualTo(3)
+        assertThat(pool.maxCapacity).isEqualTo(3)
         assertThat(allocationCount).isEqualTo(3)
     }
 

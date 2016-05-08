@@ -1,8 +1,6 @@
-package dhcoder.support.memory
+package trypp.support.memory
 
 import trypp.support.collections.ArrayMap
-import trypp.support.memory.Pool
-import trypp.support.memory.Poolable
 import kotlin.reflect.KClass
 
 /**
@@ -16,7 +14,7 @@ class HeapPool<T : Any> private constructor(private val innerPool: Pool<T>) {
     private val itemIndices: ArrayMap<T, Int>
 
     constructor(allocate: () -> T, reset: (T) -> Unit, capacity: Int = DEFAULT_CAPACITY) :
-        this(Pool(allocate, reset, capacity)) {
+    this(Pool(allocate, reset, capacity)) {
     }
 
     init {
@@ -40,6 +38,9 @@ class HeapPool<T : Any> private constructor(private val innerPool: Pool<T>) {
     val remainingCount: Int
         get() = innerPool.remainingCount
 
+    val resizable: Boolean
+        get() = innerPool.resizable
+
     fun grabNew(): T {
         val item = innerPool.grabNew()
         itemIndices.put(item, innerPool.itemsInUse.size - 1)
@@ -53,7 +54,8 @@ class HeapPool<T : Any> private constructor(private val innerPool: Pool<T>) {
         itemIndices.remove(item)
         val items = itemsInUse
         if (items.size > index) {
-            val movedItem = items[index] // An old item was moved to fill in the place of the removed item
+            // An old item was moved to fill in the place of the removed item
+            val movedItem = items[index]
             itemIndices.replace(movedItem, index)
         }
     }
@@ -64,14 +66,10 @@ class HeapPool<T : Any> private constructor(private val innerPool: Pool<T>) {
     }
 
     companion object {
-
         val DEFAULT_CAPACITY = 200 // HeapPools should be relatively large
 
-        fun <P : Poolable> of(poolableClass: KClass<P>): HeapPool<P> {
-            return HeapPool(Pool.of(poolableClass, DEFAULT_CAPACITY))
-        }
-
-        fun <P : Poolable> of(poolableClass: KClass<P>, capacity: Int): HeapPool<P> {
+        fun <P : Poolable> of(poolableClass: KClass<P>,
+                              capacity: Int = DEFAULT_CAPACITY): HeapPool<P> {
             return HeapPool(Pool.of(poolableClass, capacity))
         }
     }
