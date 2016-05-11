@@ -1,9 +1,9 @@
 group 'trypp.support'
-version '0.1-SNAPSHOT'
+version '0.8.0'
 
 buildscript {
     ext {
-        kotlin_version = "1.0.1"
+        kotlin_version = "1.+"
         testng_version = "6.9.+"
         truth_version = "0.28"
     }
