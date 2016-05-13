@@ -10,7 +10,7 @@ import trypp.support.opt.OptFloat
  */
 class Angle
 /**
- * Use [fromDegrees] or [fromRadians] instead.
+ * Use [ofDegrees] or [ofRadians] instead.
  */
 internal constructor() : Poolable {
 
@@ -139,19 +139,19 @@ internal constructor() : Poolable {
         private val FULL_REVOLUTION_RAD = 2 * PI
         private val FULL_REVOLUTION_DEG = 360f
 
-        fun fromDegrees(degrees: Float): Angle {
+        fun ofDegrees(degrees: Float): Angle {
             val angle = Angle()
             angle.setDegrees(degrees)
             return angle
         }
 
-        fun fromRadians(radians: Float): Angle {
+        fun ofRadians(radians: Float): Angle {
             val angle = Angle()
             angle.setRadians(radians)
             return angle
         }
 
-        fun from(otherAngle: Angle): Angle {
+        fun of(otherAngle: Angle): Angle {
             val angle = Angle()
             angle.setFrom(otherAngle)
             return angle

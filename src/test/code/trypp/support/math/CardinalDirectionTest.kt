@@ -5,21 +5,21 @@ import org.testng.annotations.Test
 
 class CardinalDirectionTest {
     @Test fun getForAngleWorks() {
-        assertThat(CardinalDirection.getForAngle(Angle.fromDegrees(0f))).isEqualTo(
+        assertThat(CardinalDirection.getForAngle(Angle.ofDegrees(0f))).isEqualTo(
             CardinalDirection.E)
-        assertThat(CardinalDirection.getForAngle(Angle.fromDegrees(45f))).isEqualTo(
+        assertThat(CardinalDirection.getForAngle(Angle.ofDegrees(45f))).isEqualTo(
             CardinalDirection.N)
-        assertThat(CardinalDirection.getForAngle(Angle.fromDegrees(90f))).isEqualTo(
+        assertThat(CardinalDirection.getForAngle(Angle.ofDegrees(90f))).isEqualTo(
             CardinalDirection.N)
-        assertThat(CardinalDirection.getForAngle(Angle.fromDegrees(135f))).isEqualTo(
+        assertThat(CardinalDirection.getForAngle(Angle.ofDegrees(135f))).isEqualTo(
             CardinalDirection.W)
-        assertThat(CardinalDirection.getForAngle(Angle.fromDegrees(180f))).isEqualTo(
+        assertThat(CardinalDirection.getForAngle(Angle.ofDegrees(180f))).isEqualTo(
             CardinalDirection.W)
-        assertThat(CardinalDirection.getForAngle(Angle.fromDegrees(225f))).isEqualTo(
+        assertThat(CardinalDirection.getForAngle(Angle.ofDegrees(225f))).isEqualTo(
             CardinalDirection.S)
-        assertThat(CardinalDirection.getForAngle(Angle.fromDegrees(270f))).isEqualTo(
+        assertThat(CardinalDirection.getForAngle(Angle.ofDegrees(270f))).isEqualTo(
             CardinalDirection.S)
-        assertThat(CardinalDirection.getForAngle(Angle.fromDegrees(315f))).isEqualTo(
+        assertThat(CardinalDirection.getForAngle(Angle.ofDegrees(315f))).isEqualTo(
             CardinalDirection.E)
     }
 
@@ -31,8 +31,8 @@ class CardinalDirectionTest {
     }
 
     @Test fun directionFacingWorks() {
-        assertThat(CardinalDirection.E.faces(Angle.fromDegrees(10f))).isTrue()
-        assertThat(CardinalDirection.S.faces(Angle.fromDegrees(180f))).isFalse()
-        assertThat(CardinalDirection.E.faces(Angle.fromDegrees(350f))).isTrue()
+        assertThat(CardinalDirection.E.faces(Angle.ofDegrees(10f))).isTrue()
+        assertThat(CardinalDirection.S.faces(Angle.ofDegrees(180f))).isFalse()
+        assertThat(CardinalDirection.E.faces(Angle.ofDegrees(350f))).isTrue()
     }
 }

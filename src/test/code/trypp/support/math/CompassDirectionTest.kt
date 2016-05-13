@@ -5,21 +5,21 @@ import org.testng.annotations.Test
 
 class CompassDirectionTest {
     @Test fun getForAngleWorks() {
-        assertThat(CompassDirection.getForAngle(Angle.fromDegrees(0f))).isEqualTo(
+        assertThat(CompassDirection.getForAngle(Angle.ofDegrees(0f))).isEqualTo(
             CompassDirection.E)
-        assertThat(CompassDirection.getForAngle(Angle.fromDegrees(45f))).isEqualTo(
+        assertThat(CompassDirection.getForAngle(Angle.ofDegrees(45f))).isEqualTo(
             CompassDirection.NE)
-        assertThat(CompassDirection.getForAngle(Angle.fromDegrees(90f))).isEqualTo(
+        assertThat(CompassDirection.getForAngle(Angle.ofDegrees(90f))).isEqualTo(
             CompassDirection.N)
-        assertThat(CompassDirection.getForAngle(Angle.fromDegrees(135f))).isEqualTo(
+        assertThat(CompassDirection.getForAngle(Angle.ofDegrees(135f))).isEqualTo(
             CompassDirection.NW)
-        assertThat(CompassDirection.getForAngle(Angle.fromDegrees(180f))).isEqualTo(
+        assertThat(CompassDirection.getForAngle(Angle.ofDegrees(180f))).isEqualTo(
             CompassDirection.W)
-        assertThat(CompassDirection.getForAngle(Angle.fromDegrees(225f))).isEqualTo(
+        assertThat(CompassDirection.getForAngle(Angle.ofDegrees(225f))).isEqualTo(
             CompassDirection.SW)
-        assertThat(CompassDirection.getForAngle(Angle.fromDegrees(270f))).isEqualTo(
+        assertThat(CompassDirection.getForAngle(Angle.ofDegrees(270f))).isEqualTo(
             CompassDirection.S)
-        assertThat(CompassDirection.getForAngle(Angle.fromDegrees(315f))).isEqualTo(
+        assertThat(CompassDirection.getForAngle(Angle.ofDegrees(315f))).isEqualTo(
             CompassDirection.SE)
     }
 
@@ -31,8 +31,8 @@ class CompassDirectionTest {
     }
 
     @Test fun directionFacingWorks() {
-        assertThat(CompassDirection.E.faces(Angle.fromDegrees(10f))).isTrue()
-        assertThat(CompassDirection.S.faces(Angle.fromDegrees(180f))).isFalse()
-        assertThat(CompassDirection.E.faces(Angle.fromDegrees(350f))).isTrue()
+        assertThat(CompassDirection.E.faces(Angle.ofDegrees(10f))).isTrue()
+        assertThat(CompassDirection.S.faces(Angle.ofDegrees(180f))).isFalse()
+        assertThat(CompassDirection.E.faces(Angle.ofDegrees(350f))).isTrue()
     }
 }

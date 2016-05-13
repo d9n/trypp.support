@@ -28,7 +28,7 @@ enum class CompassDirection {
         private val CACHED = values()
         // Regions that correspond with each 22.5° section of the circle
         private val REGIONS = Array(CACHED.size * 2, { E })
-        private val ANGLES = Array(CACHED.size, { Angle.fromDegrees(it * 45f) })
+        private val ANGLES = Array(CACHED.size, { Angle.ofDegrees(it * 45f) })
 
         private val random = Random()
 
