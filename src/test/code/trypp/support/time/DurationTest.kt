@@ -6,7 +6,7 @@ import org.testng.annotations.Test
 class DurationTest {
 
     @Test fun testFromSeconds() {
-        val duration = Duration.fromSeconds(90f)
+        val duration = Duration.ofSeconds(90f)
 
         assertThat(duration.getMinutes()).isWithin(0f).of(1.5f)
         assertThat(duration.getSeconds()).isWithin(0f).of(90f)
@@ -14,7 +14,7 @@ class DurationTest {
     }
 
     @Test fun testFromMinutes() {
-        val duration = Duration.fromMinutes(1.5f)
+        val duration = Duration.ofMinutes(1.5f)
 
         assertThat(duration.getMinutes()).isWithin(0f).of(1.5f)
         assertThat(duration.getSeconds()).isWithin(0f).of(90f)
@@ -22,7 +22,7 @@ class DurationTest {
     }
 
     @Test fun testFromMilliseconds() {
-        val duration = Duration.fromMilliseconds(90000f)
+        val duration = Duration.ofMilliseconds(90000f)
 
         assertThat(duration.getMinutes()).isWithin(0f).of(1.5f)
         assertThat(duration.getSeconds()).isWithin(0f).of(90f)
@@ -30,8 +30,8 @@ class DurationTest {
     }
 
     @Test fun testFromOtherDuration() {
-        val otherDuration = Duration.fromSeconds(9000f)
-        val duration = Duration.from(otherDuration)
+        val otherDuration = Duration.ofSeconds(9000f)
+        val duration = Duration.of(otherDuration)
 
         assertThat(duration.getSeconds()).isWithin(0f).of(9000f)
     }
@@ -55,7 +55,7 @@ class DurationTest {
         duration.setMilliseconds(5f)
         assertThat(duration.getMilliseconds()).isWithin(0f).of(5f)
 
-        val otherDuration = Duration.fromSeconds(6f)
+        val otherDuration = Duration.ofSeconds(6f)
         duration.setFrom(otherDuration)
         assertThat(duration.getSeconds()).isWithin(0f).of(6f)
 
@@ -75,15 +75,15 @@ class DurationTest {
         duration.addMinutes(2f)
         assertThat(duration.getSeconds()).isWithin(.1f).of(121.5f)
 
-        val otherDuration = Duration.fromMilliseconds(1500f)
+        val otherDuration = Duration.ofMilliseconds(1500f)
         duration.add(otherDuration)
         assertThat(duration.getSeconds()).isWithin(.1f).of(123f)
     }
 
     @Test fun testSubtractMethods() {
-        val duration = Duration.fromMinutes(10f)
+        val duration = Duration.ofMinutes(10f)
 
-        duration.subtract(Duration.fromMinutes(3f))
+        duration.subtract(Duration.ofMinutes(3f))
         assertThat(duration.getMinutes()).isWithin(0f).of(7f)
 
         duration.subtractMinutes(5f)
@@ -97,7 +97,7 @@ class DurationTest {
     }
 
     @Test fun settingNegativeDurationBecomesZero() {
-        assertThat(Duration.fromSeconds(-5f).getSeconds()).isWithin(0f).of(0f)
+        assertThat(Duration.ofSeconds(-5f).getSeconds()).isWithin(0f).of(0f)
     }
 
 }

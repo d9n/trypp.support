@@ -7,7 +7,7 @@ import trypp.support.memory.Poolable
  */
 class Duration
 /**
- * Don't construct directly. Use [fromSeconds], [fromMinutes], [fromMilliseconds], or [from]
+ * Don't construct directly. Use [ofSeconds], [ofMinutes], [ofMilliseconds], or [of]
  * instead.
  */
 internal constructor() : Poolable {
@@ -110,25 +110,25 @@ internal constructor() : Poolable {
             return Duration()
         }
 
-        fun fromSeconds(secs: Float): Duration {
+        fun ofSeconds(secs: Float): Duration {
             val duration = Duration()
             duration.setSeconds(secs)
             return duration
         }
 
-        fun fromMinutes(minutes: Float): Duration {
+        fun ofMinutes(minutes: Float): Duration {
             val duration = Duration()
             duration.setMinutes(minutes)
             return duration
         }
 
-        fun fromMilliseconds(milliseconds: Float): Duration {
+        fun ofMilliseconds(milliseconds: Float): Duration {
             val duration = Duration()
             duration.setMilliseconds(milliseconds)
             return duration
         }
 
-        fun from(duration: Duration): Duration {
+        fun of(duration: Duration): Duration {
             val clonsedDuration = Duration()
             clonsedDuration.setFrom(duration)
             return clonsedDuration
