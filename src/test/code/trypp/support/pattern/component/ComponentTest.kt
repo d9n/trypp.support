@@ -15,7 +15,8 @@ class ComponentTest {
     }
 
     class MarkerComponent : Component {
-        override fun reset() { }
+        override fun reset() {
+        }
     }
 
     // Position in meters
@@ -26,6 +27,17 @@ class ComponentTest {
         override fun reset() {
             x = 0f
             y = 0f
+        }
+    }
+
+    // Size in meters
+    class SizeComponent : Component {
+        var w: Float = 0f
+        var h: Float = 0f
+
+        override fun reset() {
+            w = 0f
+            h = 0f
         }
     }
 
@@ -55,9 +67,21 @@ class ComponentTest {
         }
     }
 
-    class RenderSystem : EntitySystem(PosComponent::class) {
+    class RenderSystem : EntitySystem(required = arrayOf(PosComponent::class),
+                                      optional = arrayOf(SizeComponent::class)) {
+
+        interface TestCallback {
+            fun onUpdated(entity: Entity, posComponent: PosComponent, sizeComponent: SizeComponent?)
+        }
+
+        var callback: TestCallback? = null
+
         override fun update(elapsedTime: Duration, entity: Entity, components: List<Component>) {
-            // Do nothing here but in production render the entity at its position!
+            // Don't render because this is just a test, but if this was production, it would
+            // definitely render!
+            callback?.onUpdated(entity,
+                                components[0] as PosComponent,
+                                components[1] as? SizeComponent)
         }
     }
 
@@ -146,6 +170,37 @@ class ComponentTest {
         assertThat(countComponentB.count).isEqualTo(1)
     }
 
+    @Test fun entitySystemAcceptsOptionalTypes() {
+        val manager = EntityManager(2)
+        val renderSystem = RenderSystem()
+        manager.registerSystem(renderSystem)
+
+        val posOnly = manager.newEntity()
+        posOnly.addComponent(PosComponent::class)
+
+        val posAndSize = manager.newEntity()
+        posAndSize.addComponent(PosComponent::class)
+        posAndSize.addComponent(SizeComponent::class)
+
+        var callbackCount = 0
+        renderSystem.callback = object : RenderSystem.TestCallback {
+            override fun onUpdated(entity: Entity, posComponent: PosComponent,
+                                   sizeComponent: SizeComponent?) {
+                callbackCount++
+
+                if (entity === posOnly) {
+                    assertThat(sizeComponent).isNull()
+                }
+                else if (entity === posAndSize) {
+                    assertThat(sizeComponent).isNotNull()
+                }
+            }
+        }
+
+        manager.update(Duration.zero())
+        assertThat(callbackCount).isEqualTo(2)
+    }
+
     @Test fun updateDurationPassedToSystem() {
         val manager = EntityManager(2)
         manager.registerSystem(MovementSystem())
@@ -204,7 +259,7 @@ class ComponentTest {
         assertThat(countComponent.count).isEqualTo(0)
     }
 
-    @Test fun entityCantBeModifiedAfterInitialized() {
+    @Test fun entityCannotBeModifiedAfterInitialized() {
         var manager = EntityManager(1)
         manager.registerSystem(AddSystem())
         val entity = manager.newEntity()

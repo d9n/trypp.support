@@ -16,6 +16,12 @@ A high-level example of this framework (some lines excluded for simplicity):
         var y: Float = 0f
     }
 
+    // Size in meters
+    class SizeComponent : Component {
+        var w: Float = 0f
+        var h: Float = 0f
+    }
+
     // Velocity in meters / second
     class VelComponent : Component {
         var x: Float = 0f
@@ -36,12 +42,21 @@ A high-level example of this framework (some lines excluded for simplicity):
         }
     }
 
-    class RenderSystem : EntitySystem(ImageComponent::class, PosComponent::class) {
+    class RenderSystem : EntitySystem(
+        required = arrayOf(ImageComponent::class, PosComponent::class),
+        optional = arrayOf(SizeComponent::class)) {
+
         override fun update(elapsedTime: Duration, entity: Entity, components: List<Component>) {
             val image = components[0] as ImageComponent
             val pos = components[1] as PosComponent
+            val size = components[2] as? SizeComponent
 
-            image.tex.renderAt(pos.x, pos.y)
+            if (size != null) {
+                image.tex.renderAt(pos.x, pos.y, size.w, size.h)
+            }
+            else {
+                image.tex.renderAt(pos.x, pos.y)
+            }
         }
     }
 

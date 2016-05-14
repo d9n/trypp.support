@@ -30,11 +30,11 @@ internal constructor(val manager: EntityManager) : Poolable {
         internal set
 
     /**
-     * Set to `true` whenever this entity is updated by at least one [EntitySystem] per update loop,
-     * and then set to `false` at the end of the loop. This is so [EntityManager] can throw an
-     * exception if an entity wasn't processed for some reason.
+     * Number of times this entity was updated in this last update loop. It will always be 0 at the
+     * beginning up the update loop and 0 or more by the end. Note that [EntityManager] will throw
+     * an exception if an entity wasn't processed, as this is a likely a bug.
      */
-    internal var updated = false
+    internal var updateCount = 0
         internal set
 
     /**

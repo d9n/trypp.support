@@ -122,10 +122,10 @@ class EntityManager(maxEntityCount: Int) {
                 s.updateEntity(elapsedTime, e)
             }
 
-            if (!e.updated) {
+            if (e.updateCount == 0) {
                 throw IllegalStateException("Entity registered but not processed by any system: $e")
             }
-            e.updated = false
+            e.updateCount = 0
         }
 
 

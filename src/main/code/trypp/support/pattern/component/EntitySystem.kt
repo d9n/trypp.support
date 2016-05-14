@@ -16,19 +16,34 @@ import kotlin.reflect.KClass
  * optimize. For now, we dynamically fetch each time because it's easier and most entities will
  * only have a few components anyway.
  */
-abstract class EntitySystem(vararg componentTypes: KClass<out Component>) {
-    private var componentTypes: List<KClass<out Component>> = componentTypes.asList()
-    private var components: MutableList<Component> = ArrayList(componentTypes.size)
+abstract class EntitySystem(required: Array<out KClass<out Component>>,
+                            optional: Array<out KClass<out Component>>) {
+
+    constructor(vararg types: KClass<out Component>) : this(types, emptyArray())
+
+    companion object {
+        // Returned if user tries to access an optional component that wasn't found
+        private val INVALID_COMPONENT = object : Component {
+            override fun reset() {}
+        }
+    }
+
+    private var requiredTypes: Array<out KClass<out Component>> = required.clone()
+    private var optionalTypes: Array<out KClass<out Component>> = optional.clone()
+    private var components: MutableList<Component> = ArrayList(required.size + optional.size)
 
     internal fun updateEntity(elapsedTime: Duration, entity: Entity) {
         if (!isMatching(entity))
             return
 
-        entity.updated = true
+        entity.updateCount++
         components.clear()
-        componentTypes.forEach {
+        requiredTypes.forEach {
             // getComponent always non-null because isMatching is true
-            components.add(entity.findComponent(it)!!)
+            components.add(entity.getComponent(it))
+        }
+        optionalTypes.forEach {
+            components.add(entity.findComponent(it) ?: INVALID_COMPONENT)
         }
 
         update(elapsedTime, entity, components)
@@ -42,7 +57,6 @@ abstract class EntitySystem(vararg componentTypes: KClass<out Component>) {
                                   components: List<Component>)
 
     private fun isMatching(entity: Entity): Boolean {
-        return componentTypes.all { entity.hasComponent(it) }
+        return requiredTypes.all { entity.hasComponent(it) }
     }
-
 }
