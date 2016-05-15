@@ -129,9 +129,16 @@ internal constructor() : Poolable {
         }
 
         fun of(duration: Duration): Duration {
-            val clonsedDuration = Duration()
-            clonsedDuration.setFrom(duration)
-            return clonsedDuration
+            val clonedDuration = Duration()
+            clonedDuration.setFrom(duration)
+            return clonedDuration
         }
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (other is Duration) {
+            return milliseconds.equals(other.milliseconds)
+        }
+        return false
     }
 }
