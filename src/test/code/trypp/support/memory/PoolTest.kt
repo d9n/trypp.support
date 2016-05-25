@@ -125,6 +125,25 @@ class PoolTest {
         assertThat(pool.itemsInUse.size).isEqualTo(0)
     }
 
+    @Test fun runAndFreeWorksAsExpected() {
+        val pool = Pool({ PoolItem() }, { it.reset() })
+
+        pool.grabNew()
+
+        var runAndFreeCompleted = false
+        pool.runAndFree {
+            pool.grabNew()
+            pool.grabNew()
+            pool.grabNew()
+
+            assertThat(pool.itemsInUse.size).isEqualTo(4)
+            runAndFreeCompleted = true
+        }
+
+        assertThat(runAndFreeCompleted).isEqualTo(true)
+        assertThat(pool.itemsInUse.size).isEqualTo(1)
+    }
+
     @Test fun makeResizableWithBadCapacityThrowsException() {
         val pool = Pool({ PoolItem() }, { it.reset() }, capacity = 2)
         try {

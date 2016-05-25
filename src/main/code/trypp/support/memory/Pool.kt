@@ -120,7 +120,7 @@ class Pool<T>(private val allocate: () -> T, private val reset: (T) -> Unit, cap
     fun freeCount(count: Int) {
         var indexToFree = _itemsInUse.size - 1
         for (i in 0 until count) {
-            var item = _itemsInUse[indexToFree]
+            val item = _itemsInUse[indexToFree]
             returnItemToPool(item)
             _itemsInUse.removeAt(indexToFree)
             indexToFree--
@@ -136,9 +136,13 @@ class Pool<T>(private val allocate: () -> T, private val reset: (T) -> Unit, cap
         returnItemToPool(item)
     }
 
-    fun returnItemToPool(item: T) {
-        reset(item)
-        freeItems.push(item)
+    /**
+     * Convenience method that runs an action and then releases any items grabbed within the action.
+     */
+    fun runAndFree(action: () -> Unit) {
+        val mark = mark()
+        action()
+        freeToMark(mark)
     }
 
     /**
@@ -147,5 +151,10 @@ class Pool<T>(private val allocate: () -> T, private val reset: (T) -> Unit, cap
      */
     internal fun freeAt(index: Int) {
         returnItemToPool(_itemsInUse.swapToEndAndRemove(index))
+    }
+
+    private fun returnItemToPool(item: T) {
+        reset(item)
+        freeItems.push(item)
     }
 }
