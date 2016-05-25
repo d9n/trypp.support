@@ -33,14 +33,31 @@ class StateMachine<S : Enum<S>, E : Enum<E>>(private val initialState: S) {
         fun run(state: S, event: E, eventData: Any?): S
     }
 
+    /**
+     * Method that is called anytime an event is fired which results in a successful state
+     * transition.
+     */
+    interface EventListener<S : Enum<S>, E : Enum<E>> {
+        fun run(stateOld: S, event: E, stateNew: S, eventData: Any?)
+    }
+
+    /**
+     * Method that is called anytime an event is unhandled. Useful for logging.
+     */
+    interface UnhandledListener<S : Enum<S>, E : Enum<E>> {
+        fun run(state: S, event: E, eventData: Any?): Unit
+    }
+
+
     var currentState = initialState
         private set
 
     private val eventHandlers = HashMap<StateEventKey, EventHandler<S, E>>()
-    private var fallbackHandler: EventHandler<S, E> = object : EventHandler<S, E> {
-        override fun run(state: S, event: E, eventData: Any?): S {
-            return state
-        }
+    private var eventListener: EventListener<S, E> = object : EventListener<S, E> {
+        override fun run(stateOld: S, event: E, stateNew: S, eventData: Any?) {}
+    }
+    private var unhandledListener: UnhandledListener<S, E> = object : UnhandledListener<S, E> {
+        override fun run(state: S, event: E, eventData: Any?) {}
     }
 
     private val keyPool = Pool.of(StateEventKey::class, capacity = 1)
@@ -60,17 +77,17 @@ class StateMachine<S : Enum<S>, E : Enum<E>>(private val initialState: S) {
      *
      * The handler will be called on the same thread that [handleEvent] is called on.
      */
-    fun setFallbackHandler(handler: EventHandler<S, E>) {
-        fallbackHandler = handler
+    fun setUnhandledListener(listener: UnhandledListener<S, E>) {
+        unhandledListener = listener
     }
 
     /**
-     * Convenience method for [setFallbackHandler] that takes a lambda for conciseness.
+     * Convenience method for [setUnhandledListener] that takes a lambda for conciseness.
      */
-    fun setFallbackHandler(handle: (S, E, Any?) -> S) {
-        fallbackHandler = object : EventHandler<S, E> {
-            override fun run(state: S, event: E, eventData: Any?): S {
-                return handle(state, event, eventData)
+    fun setUnhandledListener(listen: (S, E, Any?) -> Unit) {
+        unhandledListener = object : UnhandledListener<S, E> {
+            override fun run(state: S, event: E, eventData: Any?) {
+                return listen(state, event, eventData)
             }
         }
     }
@@ -104,16 +121,36 @@ class StateMachine<S : Enum<S>, E : Enum<E>>(private val initialState: S) {
     }
 
     /**
+     * Register a listener for whenever we arrive into a new state after an event.
+     *
+     * The listener will be called on the same thread that [handleEvent] is called on.
+     */
+    fun registerListener(listener: EventListener<S, E>) {
+        eventListener = listener;
+    }
+
+    /**
+     * Convenience method for [registerListener] that takes a lambda for conciseness.
+     */
+    fun registerListener(listen: (S, E, S, Any?) -> Unit) {
+        eventListener = object : EventListener<S, E> {
+            override fun run(stateOld: S, event: E, stateNew: S, eventData: Any?) {
+                listen(stateOld, event, stateNew, eventData)
+            }
+        }
+    }
+
+    /**
      * Tell the state machine to handle the passed in event given the current state.
      */
-    fun handleEvent(event: E) {
-        handleEvent(event, null)
+    fun handleEvent(event: E): Boolean {
+        return handleEvent(event, null)
     }
 
     /**
      * Like [handleEvent] but with some additional data that is related to the event.
      */
-    fun handleEvent(event: E, eventData: Any?) {
+    fun handleEvent(event: E, eventData: Any?): Boolean {
         val key = keyPool.grabNew()
         key.state = currentState
         key.event = event
@@ -121,12 +158,16 @@ class StateMachine<S : Enum<S>, E : Enum<E>>(private val initialState: S) {
         val eventHandler = eventHandlers[key]
         keyPool.free(key)
 
-        if (eventHandler == null) {
-            currentState = fallbackHandler.run(currentState, event, eventData)
-            return
+        val prevState = currentState
+        if (eventHandler != null) {
+            currentState = eventHandler.run(prevState, event, eventData)
+            eventListener.run(prevState, event, currentState, eventData)
+            return true
         }
-
-        currentState = eventHandler.run(currentState, event, eventData)
+        else {
+            unhandledListener.run(currentState, event, eventData)
+            return false
+        }
     }
 }
 

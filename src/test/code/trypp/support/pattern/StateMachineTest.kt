@@ -4,7 +4,7 @@ import com.google.common.truth.Truth.assertThat
 import org.testng.Assert
 import org.testng.annotations.BeforeMethod
 import org.testng.annotations.Test
-import trypp.support.pattern.StateMachine.EventHandler
+import trypp.support.pattern.StateMachine.UnhandledListener
 import kotlin.properties.Delegates
 
 class StateMachineTest {
@@ -24,28 +24,28 @@ class StateMachineTest {
         EVENT_WITH_DATA
     }
 
-    class TestFallbackHandler : EventHandler<TestState, TestEvent> {
+    class TestUnhandledListener : UnhandledListener<TestState, TestEvent> {
         var ranCount = 0
             private set
 
-        override fun run(state: TestState, event: TestEvent, eventData: Any?): TestState {
+        override fun run(state: TestState, event: TestEvent, eventData: Any?) {
             ranCount++
-            return state
         }
     }
 
     private var fsm: StateMachine<TestState, TestEvent> by Delegates.notNull()
-    private val fallbackHandler = TestFallbackHandler()
+    private var unhandledListener: TestUnhandledListener by Delegates.notNull()
 
     @BeforeMethod fun setUp() {
         fsm = StateMachine(TestState.A)
+        unhandledListener = TestUnhandledListener()
 
         fsm.registerEvent(TestState.A, TestEvent.A_TO_B, { s, e, data -> TestState.B })
         fsm.registerEvent(TestState.A, TestEvent.A_TO_C, { s, e, data -> TestState.C })
         fsm.registerEvent(TestState.B, TestEvent.B_TO_C, { s, e, data -> TestState.C })
         fsm.registerEvent(TestState.B, TestEvent.ANY_TO_A, { s, e, data -> TestState.A })
         fsm.registerEvent(TestState.C, TestEvent.ANY_TO_A, { s, e, data -> TestState.A })
-        fsm.setFallbackHandler(fallbackHandler)
+        fsm.setUnhandledListener(unhandledListener)
     }
 
     @Test fun stateMachineStartsInStateSetInConstructor() {
@@ -73,18 +73,18 @@ class StateMachineTest {
         assertThat(fsm.currentState).isEqualTo(TestState.A)
     }
 
-    @Test fun fallbackHandlerCatchesUnregisteredEvent() {
-        assertThat(fallbackHandler.ranCount).isEqualTo(0)
+    @Test fun unhandledListenerCatchesUnregisteredEvent() {
+        assertThat(unhandledListener.ranCount).isEqualTo(0)
 
         fsm.handleEvent(TestEvent.A_TO_B)
-        assertThat(fallbackHandler.ranCount).isEqualTo(0)
+        assertThat(unhandledListener.ranCount).isEqualTo(0)
 
         fsm.handleEvent(TestEvent.UNREGISTERED_EVENT)
-        assertThat(fallbackHandler.ranCount).isEqualTo(1)
+        assertThat(unhandledListener.ranCount).isEqualTo(1)
 
         assertThat(fsm.currentState).isEqualTo(TestState.B)
         fsm.handleEvent(TestEvent.A_TO_B)
-        assertThat(fallbackHandler.ranCount).isEqualTo(2)
+        assertThat(unhandledListener.ranCount).isEqualTo(2)
     }
 
     @Test fun duplicateRegistrationThrowsException() {
@@ -111,11 +111,30 @@ class StateMachineTest {
         assertThat(handlerCalled).isTrue()
     }
 
-    @Test fun setFallbackHandlerByLambdaWorksAsExpected() {
-        fsm.setFallbackHandler { s, e, d -> TestState.C }
+    @Test fun eventListenerWorksAsExpected() {
+        val dummyData = Object()
 
-        assertThat(fsm.currentState).isEqualTo(TestState.A)
+        var listenerCalled = false
+        fsm.registerEvent(TestState.A, TestEvent.EVENT_WITH_DATA, { s, e, d -> TestState.B })
+        fsm.registerListener({ s1, evt, s2, data ->
+             listenerCalled = true
+             assertThat(s1).isEqualTo(TestState.A)
+             assertThat(evt).isEqualTo(TestEvent.EVENT_WITH_DATA)
+             assertThat(s2).isEqualTo(TestState.B)
+             assertThat(data).isEqualTo(dummyData)
+         })
+
+        assertThat(listenerCalled).isFalse()
+        fsm.handleEvent(TestEvent.EVENT_WITH_DATA, dummyData)
+        assertThat(listenerCalled).isTrue()
+    }
+
+    @Test fun setUnhandledListenerByLambdaWorksAsExpected() {
+        var listenerCalled = false
+        fsm.setUnhandledListener { s, e, d -> listenerCalled = true }
+
+        assertThat(listenerCalled).isFalse()
         fsm.handleEvent(TestEvent.UNREGISTERED_EVENT)
-        assertThat(fsm.currentState).isEqualTo(TestState.C)
+        assertThat(listenerCalled).isTrue()
     }
 }
