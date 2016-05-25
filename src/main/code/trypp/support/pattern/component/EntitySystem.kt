@@ -11,15 +11,13 @@ import kotlin.reflect.KClass
  * a VelocityComponent and update the position that way.
  *
  * Register a system with [EntityManager.registerSystem].
- *
- * TODO: We can optimize this class by caching entity:component pairs, if it turns out we need to
- * optimize. For now, we dynamically fetch each time because it's easier and most entities will
- * only have a few components anyway.
  */
 abstract class EntitySystem(required: Array<out KClass<out Component>>,
                             optional: Array<out KClass<out Component>>) {
 
     constructor(vararg types: KClass<out Component>) : this(types, emptyArray())
+
+    private data class Entry(val entity: Entity, val components: List<Component>)
 
     companion object {
         // Returned if user tries to access an optional component that wasn't found
@@ -30,14 +28,12 @@ abstract class EntitySystem(required: Array<out KClass<out Component>>,
 
     private var requiredTypes: Array<out KClass<out Component>> = required.clone()
     private var optionalTypes: Array<out KClass<out Component>> = optional.clone()
-    private var components: MutableList<Component> = ArrayList(required.size + optional.size)
+    private var entries: MutableList<Entry> = ArrayList()
 
-    internal fun updateEntity(elapsedTime: Duration, entity: Entity) {
-        if (!isMatching(entity))
-            return
+    internal fun entityAdded(entity: Entity) {
+        if (!isMatching(entity)) return
 
-        entity.updateCount++
-        components.clear()
+        val components = ArrayList<Component>(requiredTypes.size + optionalTypes.size)
         requiredTypes.forEach {
             // getComponent always non-null because isMatching is true
             components.add(entity.getComponent(it))
@@ -46,7 +42,23 @@ abstract class EntitySystem(required: Array<out KClass<out Component>>,
             components.add(entity.findComponent(it) ?: INVALID_COMPONENT)
         }
 
-        update(elapsedTime, entity, components)
+        entries.add(Entry(entity, components))
+    }
+
+    internal fun entityRemoved(entity: Entity) {
+        for (i in 0 until entries.size) {
+            if (entries[i].entity === entity) {
+                entries.removeAt(i)
+                break
+            }
+        }
+    }
+
+    internal fun update(elapsedTime: Duration) {
+        entries.forEach {
+            it.entity.updateCount++
+            update(elapsedTime, it.entity, it.components)
+        }
     }
 
     /**

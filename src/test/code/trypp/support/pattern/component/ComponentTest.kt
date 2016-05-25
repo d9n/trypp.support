@@ -260,7 +260,7 @@ class ComponentTest {
     }
 
     @Test fun entityCannotBeModifiedAfterInitialized() {
-        var manager = EntityManager(1)
+        val manager = EntityManager(1)
         manager.registerSystem(AddSystem())
         val entity = manager.newEntity()
 
@@ -275,7 +275,7 @@ class ComponentTest {
     }
 
     @Test fun getComponentThrowsExceptionIfComponentNotFound() {
-        var manager = EntityManager(1)
+        val manager = EntityManager(1)
         val entity = manager.newEntity()
 
         assertThat(entity.findComponent(CountComponent::class)).isNull()
@@ -288,7 +288,7 @@ class ComponentTest {
     }
 
     @Test fun entityManagerThrowsExceptionIfEntityIsNotProcessed() {
-        var manager = EntityManager(1)
+        val manager = EntityManager(1)
         manager.newEntity()
 
         try {
@@ -300,12 +300,12 @@ class ComponentTest {
     }
 
     @Test fun entitySystemRegistrationOrderMatters() {
-        var managerA = EntityManager(1)
+        val managerA = EntityManager(1)
         managerA.registerSystem(AddSystem())
         managerA.registerSystem(QuadrupleSystem())
         val countA = managerA.newEntity().addComponent(CountComponent::class)
 
-        var managerB = EntityManager(1)
+        val managerB = EntityManager(1)
         managerB.registerSystem(QuadrupleSystem())
         managerB.registerSystem(AddSystem())
         val countB = managerB.newEntity().addComponent(CountComponent::class)
