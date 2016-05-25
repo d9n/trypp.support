@@ -1,4 +1,4 @@
-package dhcoder.support.math
+package trypp.support.math
 
 import trypp.support.memory.Poolable
 
