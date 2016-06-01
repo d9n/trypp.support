@@ -59,9 +59,9 @@ class OptInt : Poolable {
      *
      * @throws IllegalStateException if this optional doesn't currently have a value.
      */
-    fun getValue(): Int {
+    fun get(): Int {
         if (!hasValue) {
-            throw IllegalStateException("Call to getValue() on a valueless optional.")
+            throw IllegalStateException("Call to get() on a valueless optional.")
         }
         return value
     }
@@ -70,7 +70,7 @@ class OptInt : Poolable {
      * Returns the current value of this optional or the specified default value if this optional
      * has no value.
      */
-    fun getValueOr(defaultValue: Int): Int {
+    fun getOr(defaultValue: Int): Int {
         return if (hasValue) value else defaultValue
     }
 

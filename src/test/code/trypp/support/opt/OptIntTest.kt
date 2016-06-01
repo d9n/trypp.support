@@ -14,7 +14,7 @@ class OptIntTest {
     @Test fun createOptionalWithValueWorks() {
         val floatOpt = OptInt.of(DUMMY_VALUE)
         assertThat(floatOpt.hasValue()).isTrue()
-        assertThat(floatOpt.getValue()).isEqualTo(DUMMY_VALUE)
+        assertThat(floatOpt.get()).isEqualTo(DUMMY_VALUE)
     }
 
     @Test fun settingOptionalValueWorks() {
@@ -24,14 +24,14 @@ class OptIntTest {
 
         floatOpt.set(DUMMY_VALUE)
         assertThat(floatOpt.hasValue()).isTrue()
-        assertThat(floatOpt.getValue()).isEqualTo(DUMMY_VALUE)
+        assertThat(floatOpt.get()).isEqualTo(DUMMY_VALUE)
 
         floatOpt.clear()
         assertThat(floatOpt.hasValue()).isFalse()
 
         floatOpt.setFrom(zeroFloatOpt)
         assertThat(floatOpt.hasValue()).isTrue()
-        assertThat(floatOpt.getValue()).isEqualTo(0)
+        assertThat(floatOpt.get()).isEqualTo(0)
     }
 
     @Test fun clearOptionalWorks() {
@@ -44,10 +44,10 @@ class OptIntTest {
 
     @Test fun getValueOrWorks() {
         val floatOpt = OptInt.of(DUMMY_VALUE)
-        assertThat(floatOpt.getValueOr(0)).isEqualTo(DUMMY_VALUE)
+        assertThat(floatOpt.getOr(0)).isEqualTo(DUMMY_VALUE)
 
         floatOpt.clear()
-        assertThat(floatOpt.getValueOr(0)).isEqualTo(0)
+        assertThat(floatOpt.getOr(0)).isEqualTo(0)
     }
 
     @Test fun testOptionalEquality() {
@@ -63,7 +63,7 @@ class OptIntTest {
     @Test fun getValueWithoutValueThrowsException() {
         val emptyfloatOpt = OptInt.withNoValue()
         try {
-            emptyfloatOpt.getValue()
+            emptyfloatOpt.get()
             Assert.fail("Can't get a value from a valueless optional")
         }
         catch (e: IllegalStateException) {}

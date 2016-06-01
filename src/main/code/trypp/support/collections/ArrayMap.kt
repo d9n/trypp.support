@@ -185,7 +185,7 @@ class ArrayMap<K : Any, V : Any>(expectedSize: Int = DEFAULT_EXPECTED_SIZE, priv
         val indexOpt = indexPool.grabNew()
         getIndex(key, IndexMethod.GET, indexOpt)
         if (indexOpt.hasValue()) {
-            result = values[indexOpt.getValue()]
+            result = values[indexOpt.get()]
         }
         indexPool.free(indexOpt)
         return result
@@ -208,7 +208,7 @@ class ArrayMap<K : Any, V : Any>(expectedSize: Int = DEFAULT_EXPECTED_SIZE, priv
     fun put(key: K, value: V) {
         val indexOpt = indexPool.grabNew()
         getIndex(key, IndexMethod.PUT, indexOpt)
-        val index = indexOpt.getValue()
+        val index = indexOpt.get()
         indexPool.freeCount(1)
 
         if (!keyIsDead[index] && keys[index] != null) {
@@ -238,7 +238,7 @@ class ArrayMap<K : Any, V : Any>(expectedSize: Int = DEFAULT_EXPECTED_SIZE, priv
 
         val indexOpt = indexPool.grabNew()
         getIndex(key, IndexMethod.GET, indexOpt)
-        val index = indexOpt.getValueOr(-1)
+        val index = indexOpt.getOr(-1)
         indexPool.freeCount(1)
 
         if (index == -1) {
@@ -258,7 +258,7 @@ class ArrayMap<K : Any, V : Any>(expectedSize: Int = DEFAULT_EXPECTED_SIZE, priv
         getIndex(key, IndexMethod.GET, indexOpt)
 
         if (indexOpt.hasValue()) {
-            setInternal(indexOpt.getValue(), key, value)
+            setInternal(indexOpt.get(), key, value)
             indexPool.freeCount(1)
             return REPLACE
         }
@@ -292,7 +292,7 @@ class ArrayMap<K : Any, V : Any>(expectedSize: Int = DEFAULT_EXPECTED_SIZE, priv
         val indexOpt = indexPool.grabNew()
         getIndex(key, IndexMethod.GET, indexOpt)
         if (indexOpt.hasValue()) {
-            val index = indexOpt.getValue()
+            val index = indexOpt.get()
             keyIsDead[index] = true
             result = values[index]
             values[index] = null
