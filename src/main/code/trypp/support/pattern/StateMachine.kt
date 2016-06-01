@@ -2,6 +2,7 @@ package trypp.support.pattern
 
 import trypp.support.memory.Pool
 import trypp.support.memory.Poolable
+import trypp.support.pattern.observer.Observable
 import java.util.*
 
 /**
@@ -34,31 +35,34 @@ class StateMachine<S : Enum<S>, E : Enum<E>>(private val initialState: S) {
     }
 
     /**
-     * Method that is called anytime an event is fired which results in a successful state
-     * transition.
+     * Event that is triggered anytime a successful state transition occurs.
+     *
+     * The event will be run on the same thread [handle] is called on.
      */
-    interface EventListener<S : Enum<S>, E : Enum<E>> {
-        fun run(stateOld: S, event: E, stateNew: S, eventData: Any?)
+    class TransitionEvent<S : Enum<S>, E : Enum<E>> : Observable<((S, E, S, Any?) -> Unit)>() {
+        internal operator fun invoke(stateOld: S, event: E, stateNew: S, eventData: Any?) {
+            listeners.forEach { it(stateOld, event, stateNew, eventData) }
+        }
     }
 
     /**
-     * Method that is called anytime an event is unhandled. Useful for logging.
+     * Method that is called anytime an event is unhandled. Often useful for logging.
+     *
+     * The event will be run on the same thread [handle] is called on.
      */
-    interface UnhandledListener<S : Enum<S>, E : Enum<E>> {
-        fun run(state: S, event: E, eventData: Any?): Unit
+    class UnhandledEvent<S : Enum<S>, E : Enum<E>> : Observable<((S, E, Any?) -> Unit)>() {
+        internal operator fun invoke(state: S, event: E, eventData: Any?) {
+            listeners.forEach { it(state, event, eventData) }
+        }
     }
-
 
     var currentState = initialState
         private set
 
     private val eventHandlers = HashMap<StateEventKey, EventHandler<S, E>>()
-    private var eventListener: EventListener<S, E> = object : EventListener<S, E> {
-        override fun run(stateOld: S, event: E, stateNew: S, eventData: Any?) {}
-    }
-    private var unhandledListener: UnhandledListener<S, E> = object : UnhandledListener<S, E> {
-        override fun run(state: S, event: E, eventData: Any?) {}
-    }
+
+    val onTransition = TransitionEvent<S, E>()
+    val onUnhandled = UnhandledEvent<S, E>()
 
     private val keyPool = Pool.of(StateEventKey::class, capacity = 1)
 
@@ -71,35 +75,13 @@ class StateMachine<S : Enum<S>, E : Enum<E>>(private val initialState: S) {
     }
 
     /**
-     * Set a handler which will be called in the case an event is triggered in some state that
-     * doesn't have an [EventHandler] registered for it. This is usually a good place to log a
-     * warning.
-     *
-     * The handler will be called on the same thread that [handleEvent] is called on.
-     */
-    fun setUnhandledListener(listener: UnhandledListener<S, E>) {
-        unhandledListener = listener
-    }
-
-    /**
-     * Convenience method for [setUnhandledListener] that takes a lambda for conciseness.
-     */
-    fun setUnhandledListener(listen: (S, E, Any?) -> Unit) {
-        unhandledListener = object : UnhandledListener<S, E> {
-            override fun run(state: S, event: E, eventData: Any?) {
-                return listen(state, event, eventData)
-            }
-        }
-    }
-
-    /**
      * Register a state and a handler for whenever we receive an event in that state.
      *
-     * The handler will be called on the same thread that [handleEvent] is called on.
+     * The handler will be called on the same thread that [handle] is called on.
      *
      * @throws IllegalArgumentException if duplicate state/event pairs are registered
      */
-    fun registerEvent(state: S, event: E, handler: EventHandler<S, E>) {
+    fun registerTransition(state: S, event: E, handler: EventHandler<S, E>) {
         val key = StateEventKey(state, event)
         if (eventHandlers.containsKey(key)) {
             throw IllegalArgumentException(
@@ -110,10 +92,10 @@ class StateMachine<S : Enum<S>, E : Enum<E>>(private val initialState: S) {
     }
 
     /**
-     * Convenience method for [registerEvent] that takes a lambda for conciseness.
+     * Convenience method for [registerTransition] that takes a lambda for conciseness.
      */
-    fun registerEvent(state: S, event: E, handle: (S, E, Any?) -> S) {
-        registerEvent(state, event, object : EventHandler<S, E> {
+    fun registerTransition(state: S, event: E, handle: (S, E, Any?) -> S) {
+        registerTransition(state, event, object : EventHandler<S, E> {
             override fun run(state: S, event: E, eventData: Any?): S {
                 return handle(state, event, eventData)
             }
@@ -121,36 +103,16 @@ class StateMachine<S : Enum<S>, E : Enum<E>>(private val initialState: S) {
     }
 
     /**
-     * Register a listener for whenever we arrive into a new state after an event.
-     *
-     * The listener will be called on the same thread that [handleEvent] is called on.
-     */
-    fun registerListener(listener: EventListener<S, E>) {
-        eventListener = listener;
-    }
-
-    /**
-     * Convenience method for [registerListener] that takes a lambda for conciseness.
-     */
-    fun registerListener(listen: (S, E, S, Any?) -> Unit) {
-        eventListener = object : EventListener<S, E> {
-            override fun run(stateOld: S, event: E, stateNew: S, eventData: Any?) {
-                listen(stateOld, event, stateNew, eventData)
-            }
-        }
-    }
-
-    /**
      * Tell the state machine to handle the passed in event given the current state.
      */
-    fun handleEvent(event: E): Boolean {
-        return handleEvent(event, null)
+    fun handle(event: E): Boolean {
+        return handle(event, null)
     }
 
     /**
-     * Like [handleEvent] but with some additional data that is related to the event.
+     * Like [handle] but with some additional data that is related to the event.
      */
-    fun handleEvent(event: E, eventData: Any?): Boolean {
+    fun handle(event: E, eventData: Any?): Boolean {
         val key = keyPool.grabNew()
         key.state = currentState
         key.event = event
@@ -161,11 +123,11 @@ class StateMachine<S : Enum<S>, E : Enum<E>>(private val initialState: S) {
         val prevState = currentState
         if (eventHandler != null) {
             currentState = eventHandler.run(prevState, event, eventData)
-            eventListener.run(prevState, event, currentState, eventData)
+            onTransition(prevState, event, currentState, eventData)
             return true
         }
         else {
-            unhandledListener.run(currentState, event, eventData)
+            onUnhandled(currentState, event, eventData)
             return false
         }
     }
