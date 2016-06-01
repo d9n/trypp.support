@@ -43,6 +43,8 @@ abstract class EntitySystem(required: Array<out KClass<out Component>>,
         }
 
         entries.add(Entry(entity, components))
+
+        init(entity, components)
     }
 
     internal fun entityRemoved(entity: Entity) {
@@ -60,6 +62,8 @@ abstract class EntitySystem(required: Array<out KClass<out Component>>,
             update(elapsedTime, it.entity, it.components)
         }
     }
+
+    protected open fun init(entity: Entity, components: List<Component>) {}
 
     /**
      * Process an entity's components. The components will be provided in the same order as what was
