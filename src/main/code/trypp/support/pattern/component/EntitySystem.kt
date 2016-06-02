@@ -17,12 +17,13 @@ abstract class EntitySystem(required: Array<out KClass<out Component>>,
 
     constructor(vararg types: KClass<out Component>) : this(types, emptyArray())
 
-    private data class Entry(val entity: Entity, val components: List<Component>)
+    private data class Entry(val entity: Entity, val components: List<Component>, val data: Any?)
 
     companion object {
         // Returned if user tries to access an optional component that wasn't found
         private val INVALID_COMPONENT = object : Component {
-            override fun reset() {}
+            override fun reset() {
+            }
         }
     }
 
@@ -42,15 +43,15 @@ abstract class EntitySystem(required: Array<out KClass<out Component>>,
             components.add(entity.findComponent(it) ?: INVALID_COMPONENT)
         }
 
-        entries.add(Entry(entity, components))
-
-        init(entity, components)
+        val data = onEntityAdded(entity, components);
+        entries.add(Entry(entity, components, data))
     }
 
     internal fun entityRemoved(entity: Entity) {
         for (i in 0 until entries.size) {
             if (entries[i].entity === entity) {
-                entries.removeAt(i)
+                val entry = entries.removeAt(i)
+                onEntityRemoved(entry.entity, entry.components, entry.data)
                 break
             }
         }
@@ -59,18 +60,37 @@ abstract class EntitySystem(required: Array<out KClass<out Component>>,
     internal fun update(elapsedTime: Duration) {
         entries.forEach {
             it.entity.updateCount++
-            update(elapsedTime, it.entity, it.components)
+            update(elapsedTime, it.entity, it.components, it.data)
         }
     }
 
-    protected open fun init(entity: Entity, components: List<Component>) {}
+    /**
+     * Allow a system to respond to the addition of a new entity. This is a great place to
+     * initialize any local state related to the entity.
+     *
+     * @return Optional data that should be associated with this entity. If returned, it will be
+     * passed down again in each call to [update]
+     */
+    protected open fun onEntityAdded(entity: Entity, components: List<Component>): Any? {
+        return null
+    }
+
+    /**
+     * Allow a system to respond to the removal an entity. This is a great place to clean up
+     * any disposable resources (like event listeners) initialized by [onEntityAdded]
+     */
+    protected open fun onEntityRemoved(entity: Entity, components: List<Component>, data: Any?) {
+    }
 
     /**
      * Process an entity's components. The components will be provided in the same order as what was
      * passed into the constructor.
+     *
+     * @param data Data that may have optionally been created by [onEntityAdded]
      */
     protected abstract fun update(elapsedTime: Duration, entity: Entity,
-                                  components: List<Component>)
+                                  components: List<Component>,
+                                  data: Any?)
 
     private fun isMatching(entity: Entity): Boolean {
         return requiredTypes.all { entity.hasComponent(it) }
