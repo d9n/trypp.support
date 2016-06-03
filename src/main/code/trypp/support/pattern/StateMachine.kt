@@ -11,6 +11,9 @@ import java.util.*
  * You instantiate a state machine by registering a list of states and a list of events that it can
  * accept in each state.
  *
+ * You must [freeze] a state machine before you can start using it. Once frozen, you can't
+ * register any more states.
+ *
  * @param S An enumeration type that represents the known states this machine can get into.
  * @param E An enumeration type that represents the known events this machine can accept.
  * @param initialState The first state this machine will start out in
@@ -59,19 +62,25 @@ class StateMachine<S : Enum<S>, E : Enum<E>>(private val initialState: S) {
     var currentState = initialState
         private set
 
-    private val eventHandlers = HashMap<StateEventKey, EventHandler<S, E>>()
-
     val onTransition = TransitionEvent<S, E>()
     val onUnhandled = UnhandledEvent<S, E>()
 
+    private val eventHandlers = HashMap<StateEventKey, EventHandler<S, E>>()
     private val keyPool = Pool.of(StateEventKey::class, capacity = 1)
 
+    var frozen = false
+        private set
 
     /**
      * Reset this state machine back to its initial state.
      */
     fun reset() {
         currentState = initialState
+        frozen = false
+        keyPool.freeAll()
+        eventHandlers.clear()
+        onTransition.clearListeners()
+        onUnhandled.clearListeners()
     }
 
     /**
@@ -82,6 +91,10 @@ class StateMachine<S : Enum<S>, E : Enum<E>>(private val initialState: S) {
      * @throws IllegalArgumentException if duplicate state/event pairs are registered
      */
     fun registerTransition(state: S, event: E, handler: EventHandler<S, E>) {
+        if (frozen) {
+            throw IllegalStateException("Can't register transition on frozen state machine")
+        }
+
         val key = StateEventKey(state, event)
         if (eventHandlers.containsKey(key)) {
             throw IllegalArgumentException(
@@ -102,6 +115,13 @@ class StateMachine<S : Enum<S>, E : Enum<E>>(private val initialState: S) {
         })
     }
 
+    fun freeze() {
+        if (frozen) {
+            throw IllegalStateException("Can't freeze already frozen state machine")
+        }
+        frozen = true
+    }
+
     /**
      * Tell the state machine to handle the passed in event given the current state.
      */
@@ -113,6 +133,10 @@ class StateMachine<S : Enum<S>, E : Enum<E>>(private val initialState: S) {
      * Like [handle] but with some additional data that is related to the event.
      */
     fun handle(event: E, eventData: Any?): Boolean {
+        if (!frozen) {
+            throw IllegalStateException("You must freeze this state machine before firing events")
+        }
+
         val key = keyPool.grabNew()
         key.state = currentState
         key.event = event

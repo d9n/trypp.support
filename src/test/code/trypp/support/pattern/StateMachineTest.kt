@@ -33,6 +33,7 @@ class StateMachineTest {
         fsm.registerTransition(TestState.B, TestEvent.B_TO_C, { s, e, data -> TestState.C })
         fsm.registerTransition(TestState.B, TestEvent.ANY_TO_A, { s, e, data -> TestState.A })
         fsm.registerTransition(TestState.C, TestEvent.ANY_TO_A, { s, e, data -> TestState.A })
+        // Tests must freeze fsm before using it!
     }
 
     @Test fun stateMachineStartsInStateSetInConstructor() {
@@ -44,6 +45,8 @@ class StateMachineTest {
     }
 
     @Test fun testStateMachineChangesStateAsExpected() {
+        fsm.freeze()
+
         assertThat(fsm.currentState).isEqualTo(TestState.A)
         fsm.handle(TestEvent.A_TO_B)
         assertThat(fsm.currentState).isEqualTo(TestState.B)
@@ -58,9 +61,31 @@ class StateMachineTest {
 
         fsm.reset()
         assertThat(fsm.currentState).isEqualTo(TestState.A)
+        assertThat(fsm.frozen).isFalse()
+
+        // Resetting should clear previously registered listeners
+        fsm.freeze()
+        fsm.handle(TestEvent.A_TO_B)
+        assertThat(fsm.currentState).isEqualTo(TestState.A)
+    }
+
+    @Test fun freezeRemovesRegisteredTransitions() {
+        fsm.freeze()
+        assertThat(fsm.currentState).isEqualTo(TestState.A)
+        fsm.handle(TestEvent.A_TO_B)
+        assertThat(fsm.currentState).isEqualTo(TestState.B)
+
+        fsm.reset()
+        fsm.freeze()
+
+        assertThat(fsm.currentState).isEqualTo(TestState.A)
+        fsm.handle(TestEvent.A_TO_B)
+        assertThat(fsm.currentState).isEqualTo(TestState.A)
     }
 
     @Test fun unhandledListenerCatchesUnregisteredEvent() {
+        fsm.freeze()
+
         var ranCount = 0
         fsm.onUnhandled += { s, e, d -> ranCount++ }
         assertThat(ranCount).isEqualTo(0)
@@ -76,15 +101,6 @@ class StateMachineTest {
         assertThat(ranCount).isEqualTo(2)
     }
 
-    @Test fun duplicateRegistrationThrowsException() {
-        try {
-            fsm.registerTransition(TestState.A, TestEvent.A_TO_B, { s, e, data -> TestState.B })
-            Assert.fail("Duplicate event registration is not allowed")
-        }
-        catch (e: IllegalArgumentException) {
-        }
-    }
-
     @Test fun eventDataIsPassedOn() {
         val dummyData = Object()
 
@@ -94,6 +110,7 @@ class StateMachineTest {
             assertThat(data).isEqualTo(dummyData)
             s // Stay in same state
         })
+        fsm.freeze()
 
         assertThat(handlerCalled).isFalse()
         fsm.handle(TestEvent.EVENT_WITH_DATA, dummyData)
@@ -112,9 +129,54 @@ class StateMachineTest {
              assertThat(s2).isEqualTo(TestState.B)
              assertThat(data).isEqualTo(dummyData)
          })
+        fsm.freeze()
 
         assertThat(listenerCalled).isFalse()
         fsm.handle(TestEvent.EVENT_WITH_DATA, dummyData)
         assertThat(listenerCalled).isTrue()
+    }
+
+    @Test fun duplicateRegistrationThrowsException() {
+        try {
+            fsm.registerTransition(TestState.A, TestEvent.A_TO_B, { s, e, data -> TestState.B })
+            Assert.fail("Duplicate event registration is not allowed")
+        }
+        catch (e: IllegalArgumentException) {
+        }
+    }
+
+    @Test fun freezingTwiceThrowsException() {
+        fsm.freeze()
+        try {
+            fsm.freeze()
+            Assert.fail("Cannot freeze a frozen state machine")
+        }
+        catch (e: IllegalStateException) {
+        }
+    }
+
+    @Test fun cannotRegisterTransitionAfterFrozen() {
+        fsm.freeze()
+        try {
+            assertThat(fsm.frozen).isTrue()
+            fsm.registerTransition(TestState.A, TestEvent.EVENT_WITH_DATA, { s, e, d -> TestState.A })
+            Assert.fail("Cannot register transition on frozen state machine")
+        }
+        catch (e: IllegalStateException) {
+        }
+    }
+
+    @Test fun handleCannotBeCalledBeforeFreezing() {
+        try {
+            assertThat(fsm.frozen).isFalse()
+            fsm.handle(TestEvent.A_TO_B)
+            Assert.fail("Cannot fire event on non-frozen state machine")
+        }
+        catch (e: IllegalStateException) {
+        }
+
+        fsm.freeze()
+        fsm.handle(TestEvent.A_TO_B)
+        assertThat(fsm.currentState).isEqualTo(TestState.B)
     }
 }
