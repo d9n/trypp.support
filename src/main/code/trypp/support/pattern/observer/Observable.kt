@@ -26,25 +26,36 @@ abstract class Observable<L>() {
         removeListener(listener)
     }
 
+    operator fun minusAssign(handle: Int) {
+        removeListener(handle)
+    }
+
     /**
-     * Like the += operator but returns the listener as a return value.
+     * Like the += operator but returns a handle to the listener as a return value.
      *
      * This can be a useful way to get a return value of a lambda method which we can remove later.
      *
      * e.g.
      *
      * ```
-     * val listener = event.addListener { ... }
-     * event.removeListener(listener)
+     * val handle = event.addListener { ... }
+     * event.removeListener(handle)
      * ```
      */
-    fun addListener(listener: L): L {
+    fun addListener(listener: L): Int {
         listeners.add(listener)
-        return listener
+        return listener!!.hashCode()
     }
 
     fun removeListener(listener: L): Boolean {
         return listeners.remove(listener)
+    }
+
+    /**
+     * Remove a listener by the handle value returned by [addListener]
+     */
+    fun removeListener(handle: Int): Boolean {
+        return listeners.removeIf { it!!.hashCode() == handle }
     }
 
     fun clearListeners() {

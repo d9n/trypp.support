@@ -41,17 +41,13 @@ class EventTest {
         val event = Event0()
 
         var listenCount = 0
-        val listener = event.addListener { listenCount++ }
+        val handle = event.addListener { listenCount++ }
         event()
         assertThat(listenCount).isEqualTo(1)
 
-        event -= listener
+        event -= handle
         event()
         assertThat(listenCount).isEqualTo(1)
-
-        event += listener
-        event()
-        assertThat(listenCount).isEqualTo(2)
     }
 
     @Test
