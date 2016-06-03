@@ -135,4 +135,48 @@ class EventTest {
         event("1", "2", "3", "4", "5")
         assertThat(value).isEqualTo("12345")
     }
+
+    @Test
+    fun event6Works() {
+        val event = Event6<String, String, String, String, String, String>()
+        var value = ""
+        event += { s1, s2, s3, s4, s5, s6 -> value = s1 + s2 + s3 + s4 + s5 + s6 }
+
+        assertThat(value).isEmpty()
+        event("1", "2", "3", "4", "5", "6")
+        assertThat(value).isEqualTo("123456")
+    }
+
+    @Test
+    fun event7Works() {
+        val event = Event7<String, String, String, String, String, String, String>()
+        var value = ""
+        event += { s1, s2, s3, s4, s5, s6, s7 -> value = s1 + s2 + s3 + s4 + s5 + s6 + s7 }
+
+        assertThat(value).isEmpty()
+        event("1", "2", "3", "4", "5", "6", "7")
+        assertThat(value).isEqualTo("1234567")
+    }
+
+    @Test
+    fun event8Works() {
+        val event = Event8<String, String, String, String, String, String, String, String>()
+        var value = ""
+        event += { s1, s2, s3, s4, s5, s6, s7, s8 -> value = s1 + s2 + s3 + s4 + s5 + s6 + s7 + s8 }
+
+        assertThat(value).isEmpty()
+        event("1", "2", "3", "4", "5", "6", "7", "8")
+        assertThat(value).isEqualTo("12345678")
+    }
+
+    @Test
+    fun event9Works() {
+        val event = Event9<String, String, String, String, String, String, String, String, String>()
+        var value = ""
+        event += { s1, s2, s3, s4, s5, s6, s7, s8, s9 -> value = s1 + s2 + s3 + s4 + s5 + s6 + s7 + s8 + s9 }
+
+        assertThat(value).isEmpty()
+        event("1", "2", "3", "4", "5", "6", "7", "8", "9")
+        assertThat(value).isEqualTo("123456789")
+    }
 }
