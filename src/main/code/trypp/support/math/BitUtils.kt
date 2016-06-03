@@ -2,7 +2,10 @@ package trypp.support.math
 
 object BitUtils {
     fun requireSingleBit(value: Int) {
-        assert(hasSingleBit(value), { "Passed in value should have a single bit set: $value -> ${Integer.toBinaryString(value)}" })
+        if (!hasSingleBit(value)) {
+            throw IllegalArgumentException(
+                "Passed in value should have a single bit set: $value -> ${Integer.toBinaryString(value)}")
+        }
     }
 
     /**
