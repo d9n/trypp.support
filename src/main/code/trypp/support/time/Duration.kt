@@ -5,14 +5,12 @@ import trypp.support.memory.Poolable
 /**
  * An class which represents a time duration.
  */
-class Duration
+data class Duration
 /**
  * Don't construct directly. Use [ofSeconds], [ofMinutes], [ofMilliseconds], or [of]
  * instead.
  */
-internal constructor() : Poolable {
-
-    private var milliseconds = 0f
+internal constructor(private var milliseconds: Float = 0f) : Poolable {
 
     fun getMilliseconds(): Float {
         return milliseconds
@@ -133,12 +131,5 @@ internal constructor() : Poolable {
             clonedDuration.setFrom(duration)
             return clonedDuration
         }
-    }
-
-    override fun equals(other: Any?): Boolean {
-        if (other is Duration) {
-            return milliseconds.equals(other.milliseconds)
-        }
-        return false
     }
 }

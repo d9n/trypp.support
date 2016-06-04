@@ -3,7 +3,6 @@ package trypp.support.collections
 import trypp.support.collections.ArrayMap.InsertMethod.REPLACE
 import trypp.support.math.log2
 import trypp.support.memory.Pool
-import trypp.support.memory.Poolable
 import trypp.support.opt.OptInt
 import java.util.*
 import kotlin.properties.Delegates

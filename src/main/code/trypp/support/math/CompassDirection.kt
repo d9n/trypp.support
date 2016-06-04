@@ -1,7 +1,6 @@
 package trypp.support.math
 
-import trypp.support.memory.Pool
-import java.util.*
+import java.util.Random
 
 /**
  * Enumeration for compass directions and various utility methods.

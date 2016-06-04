@@ -10,14 +10,14 @@ class HeapPoolTest {
         assertThat(pool.itemsInUse.size).isEqualTo(0)
         assertThat(pool.remainingCount).isEqualTo(5)
 
-        var item1 = pool.grabNew()
+        val item1 = pool.grabNew()
         assertThat(pool.itemsInUse.size).isEqualTo(1)
         assertThat(pool.remainingCount).isEqualTo(4)
 
-        var item2 = pool.grabNew()
-        var item3 = pool.grabNew()
-        var item4 = pool.grabNew()
-        var item5 = pool.grabNew()
+        val item2 = pool.grabNew()
+        val item3 = pool.grabNew()
+        val item4 = pool.grabNew()
+        val item5 = pool.grabNew()
         assertThat(pool.itemsInUse.size).isEqualTo(5)
         assertThat(pool.remainingCount).isEqualTo(0)
 
