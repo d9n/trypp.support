@@ -2,7 +2,8 @@ package trypp.support.pattern
 
 import trypp.support.memory.Pool
 import trypp.support.memory.Poolable
-import trypp.support.pattern.observer.Observable
+import trypp.support.pattern.observer.Event3
+import trypp.support.pattern.observer.Event4
 import java.util.*
 
 /**
@@ -37,33 +38,31 @@ class StateMachine<S : Enum<S>, E : Enum<E>>(private val initialState: S) {
         fun run(state: S, event: E, eventData: Any?): S
     }
 
+    var currentState = initialState
+        private set
+
     /**
      * Event that is triggered anytime a successful state transition occurs.
      *
+     * S - oldState
+     * E - event
+     * S - newState
+     * Any? - eventData
+     *
      * The event will be run on the same thread [handle] is called on.
      */
-    class TransitionEvent<S : Enum<S>, E : Enum<E>> : Observable<((S, E, S, Any?) -> Unit)>() {
-        internal operator fun invoke(stateOld: S, event: E, stateNew: S, eventData: Any?) {
-            listeners.forEach { it(stateOld, event, stateNew, eventData) }
-        }
-    }
+    val onTransition = Event4<S, E, S, Any?>()
 
     /**
      * Method that is called anytime an event is unhandled. Often useful for logging.
      *
+     * S - state
+     * E - event
+     * Any? - eventData
+     *
      * The event will be run on the same thread [handle] is called on.
      */
-    class UnhandledEvent<S : Enum<S>, E : Enum<E>> : Observable<((S, E, Any?) -> Unit)>() {
-        internal operator fun invoke(state: S, event: E, eventData: Any?) {
-            listeners.forEach { it(state, event, eventData) }
-        }
-    }
-
-    var currentState = initialState
-        private set
-
-    val onTransition = TransitionEvent<S, E>()
-    val onUnhandled = UnhandledEvent<S, E>()
+    val onUnhandled = Event3<S, E, Any?>()
 
     private val eventHandlers = HashMap<StateEventKey, EventHandler<S, E>>()
     private val keyPool = Pool.of(StateEventKey::class, capacity = 1)
