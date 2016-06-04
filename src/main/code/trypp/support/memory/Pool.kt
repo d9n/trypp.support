@@ -73,7 +73,7 @@ class Pool<T>(private val allocate: () -> T, private val reset: (T) -> Unit, cap
         }
     }
 
-    fun makeResizable(maxCapacity: Int): Pool<T> {
+    fun makeResizable(maxCapacity: Int = Int.MAX_VALUE): Pool<T> {
         if (maxCapacity < capacity) {
             throw IllegalArgumentException(
                 "Can't set pool's max capacity to $maxCapacity as that is smaller than current capacity, $capacity")
