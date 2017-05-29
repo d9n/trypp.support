@@ -61,9 +61,9 @@ class OptFloat : Poolable {
      *
      * @throws IllegalStateException if this optional doesn't currently have a value.
      */
-    fun getValue(): Float {
+    fun get(): Float {
         if (!hasValue) {
-            throw IllegalStateException("Call to getValue() on a valueless optional.")
+            throw IllegalStateException("Call to get() on a valueless optional.")
         }
         return value
     }
@@ -72,7 +72,7 @@ class OptFloat : Poolable {
      * Returns the current value of this optional or the specified default value if this optional
      * has no value.
      */
-    fun getValueOr(defaultValue: Float): Float {
+    fun getOr(defaultValue: Float): Float {
         return if (hasValue) value else defaultValue
     }
 

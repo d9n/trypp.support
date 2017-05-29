@@ -73,7 +73,7 @@ class Pool<T>(private val allocate: () -> T, private val reset: (T) -> Unit, cap
         }
     }
 
-    fun makeResizable(maxCapacity: Int): Pool<T> {
+    fun makeResizable(maxCapacity: Int = Int.MAX_VALUE): Pool<T> {
         if (maxCapacity < capacity) {
             throw IllegalArgumentException(
                 "Can't set pool's max capacity to $maxCapacity as that is smaller than current capacity, $capacity")
@@ -136,9 +136,13 @@ class Pool<T>(private val allocate: () -> T, private val reset: (T) -> Unit, cap
         returnItemToPool(item)
     }
 
-    fun returnItemToPool(item: T) {
-        reset(item)
-        freeItems.push(item)
+    /**
+     * Convenience method that runs an action and then releases any items grabbed within the action.
+     */
+    fun runAndFree(action: () -> Unit) {
+        val mark = mark()
+        action()
+        freeToMark(mark)
     }
 
     /**
@@ -147,5 +151,10 @@ class Pool<T>(private val allocate: () -> T, private val reset: (T) -> Unit, cap
      */
     internal fun freeAt(index: Int) {
         returnItemToPool(_itemsInUse.swapToEndAndRemove(index))
+    }
+
+    private fun returnItemToPool(item: T) {
+        reset(item)
+        freeItems.push(item)
     }
 }

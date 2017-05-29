@@ -89,7 +89,7 @@ class ServicesTest {
     @Test fun replacingHookPointByClassWorks() {
         val services = Services()
         services.create(Counter::class, OneCounter::class)
-        val getCounter = { -> services.get(Counter::class) }
+        val getCounter = { -> services[Counter::class] }
 
         services.replace(Counter::class, TwoCounter::class)
         assertThat(getCounter().count).isEqualTo(0)
@@ -102,7 +102,7 @@ class ServicesTest {
         val lastLine = StringBuilder()
         services.create(Logger::class, TestLogger(lastLine))
         services.replace(Logger::class, CountingLogger::class)
-        val getLogger = { -> services.get(Logger::class) }
+        val getLogger = { -> services[Logger::class] }
 
         assertThat(lastLine.toString()).isEmpty()
         getLogger().log("This is a test")

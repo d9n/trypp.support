@@ -23,9 +23,9 @@ internal constructor() : Poolable {
 
     fun getDegrees(): Float {
         if (!degreesOpt.hasValue()) {
-            setDegrees(radiansOpt.getValue() * RAD_TO_DEG)
+            setDegrees(radiansOpt.get() * RAD_TO_DEG)
         }
-        return degreesOpt.getValue()
+        return degreesOpt.get()
     }
 
     fun setDegrees(degrees: Float): Angle {
@@ -42,9 +42,9 @@ internal constructor() : Poolable {
 
     fun getRadians(): Float {
         if (!radiansOpt.hasValue()) {
-            setRadians(degreesOpt.getValue() * DEG_TO_RAD)
+            setRadians(degreesOpt.get() * DEG_TO_RAD)
         }
-        return radiansOpt.getValue()
+        return radiansOpt.get()
     }
 
     fun setRadians(radians: Float): Angle {

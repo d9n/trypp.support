@@ -1,5 +1,10 @@
 package trypp.support.math
 
+/**
+ * Return log₂ of value, rounded up to an integer ceiling.
+ *
+ * e.g. `log2(1) -> 0`, `log2(4) -> 2`, `log2(5) -> 3`, `log2(8) -> 3`
+ */
 fun log2(value: Int): Int {
 
     if (value < 0) {
@@ -26,14 +31,14 @@ fun isPowerOfTwo(value: Int): Boolean {
 
 fun clamp(value: Int, min: Int, max: Int): Int {
     if (min > max) {
-        throw IllegalArgumentException("Called clamp with min < max (min: $min, max: $max")
+        throw IllegalArgumentException("Called clamp with min > max (min: $min, max: $max")
     }
     return Math.max(min, Math.min(max, value))
 }
 
 fun clamp(value: Float, min: Float, max: Float): Float {
     if (min > max) {
-        throw IllegalArgumentException("Called clamp with min < max (min: $min, max: $max")
+        throw IllegalArgumentException("Called clamp with min > max (min: $min, max: $max")
     }
     return Math.max(min, Math.min(max, value))
 }

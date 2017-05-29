@@ -7,7 +7,6 @@ import trypp.support.pattern.exceptions.ServiceNotFoundException
 import java.util.*
 import kotlin.reflect.KClass
 import kotlin.reflect.defaultType
-import kotlin.reflect.full.defaultType
 
 /**
  * A collection of services, which is basically a mapping of interface to implementation pairs.

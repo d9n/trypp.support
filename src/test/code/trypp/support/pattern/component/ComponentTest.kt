@@ -4,6 +4,7 @@ import com.google.common.truth.Truth.assertThat
 import org.testng.Assert
 import org.testng.annotations.Test
 import trypp.support.time.Duration
+import java.util.*
 
 class ComponentTest {
 
@@ -58,7 +59,8 @@ class ComponentTest {
     }
 
     class MovementSystem : EntitySystem(PosComponent::class, VelComponent::class) {
-        override fun update(elapsedTime: Duration, entity: Entity, components: List<Component>) {
+        override fun update(elapsedTime: Duration, entity: Entity, components: List<Component>,
+                            data: Any?) {
             val pos = components[0] as PosComponent
             val vel = components[1] as VelComponent
 
@@ -76,7 +78,8 @@ class ComponentTest {
 
         var callback: TestCallback? = null
 
-        override fun update(elapsedTime: Duration, entity: Entity, components: List<Component>) {
+        override fun update(elapsedTime: Duration, entity: Entity, components: List<Component>,
+                            data: Any?) {
             // Don't render because this is just a test, but if this was production, it would
             // definitely render!
             callback?.onUpdated(entity,
@@ -86,28 +89,76 @@ class ComponentTest {
     }
 
     class AddSystem : EntitySystem(CountComponent::class) {
-        override fun update(elapsedTime: Duration, entity: Entity, components: List<Component>) {
+        override fun update(elapsedTime: Duration, entity: Entity, components: List<Component>,
+                            data: Any?) {
             (components[0] as CountComponent).count++
         }
     }
 
     class AddMarkedOnlySystem : EntitySystem(CountComponent::class, MarkerComponent::class) {
-        override fun update(elapsedTime: Duration, entity: Entity, components: List<Component>) {
+        override fun update(elapsedTime: Duration, entity: Entity, components: List<Component>,
+                            data: Any?) {
             (components[0] as CountComponent).count++
         }
     }
 
     class QuadrupleSystem : EntitySystem(CountComponent::class) {
-        override fun update(elapsedTime: Duration, entity: Entity, components: List<Component>) {
+        override fun update(elapsedTime: Duration, entity: Entity, components: List<Component>,
+                            data: Any?) {
             (components[0] as CountComponent).count *= 4
         }
     }
 
     class FreeOnThreeSystem : EntitySystem(CountComponent::class) {
-        override fun update(elapsedTime: Duration, entity: Entity, components: List<Component>) {
+        override fun update(elapsedTime: Duration, entity: Entity, components: List<Component>,
+                            data: Any?) {
             if ((components[0] as CountComponent).count == 3) {
                 entity.free()
             }
+        }
+    }
+
+    // Example system for testing data per entity
+    class FibonacciSystem : EntitySystem(CountComponent::class) {
+        class FibData() {
+            var val1 = 1
+            var val2 = 1
+
+            fun update(): Int {
+                val sum = val1 + val2
+                val1 = val2
+                val2 = sum
+
+                return sum
+            }
+        }
+
+        override fun onEntityAdded(entity: Entity, components: List<Component>): Any? {
+            return FibData()
+        }
+
+        override fun update(elapsedTime: Duration, entity: Entity, components: List<Component>,
+                            data: Any?) {
+            val fibData = data as FibData
+            (components[0] as CountComponent).count = fibData.update()
+        }
+    }
+
+    class EntityListSystem : EntitySystem() {
+
+        val entityList = ArrayList<Entity>()
+
+        override fun onEntityAdded(entity: Entity, components: List<Component>): Any? {
+            entityList.add(entity)
+            return null
+        }
+
+        override fun onEntityRemoved(entity: Entity, components: List<Component>, data: Any?) {
+            entityList.remove(entity)
+        }
+
+        override fun update(elapsedTime: Duration, entity: Entity, components: List<Component>,
+                            data: Any?) {
         }
     }
 
@@ -123,7 +174,7 @@ class ComponentTest {
 
         try {
             manager.newEntity()
-            Assert.fail()
+            Assert.fail("Can't create more entities than max allowed")
         }
         catch(e: IllegalStateException) {
         }
@@ -260,7 +311,7 @@ class ComponentTest {
     }
 
     @Test fun entityCannotBeModifiedAfterInitialized() {
-        var manager = EntityManager(1)
+        val manager = EntityManager(1)
         manager.registerSystem(AddSystem())
         val entity = manager.newEntity()
 
@@ -275,7 +326,7 @@ class ComponentTest {
     }
 
     @Test fun getComponentThrowsExceptionIfComponentNotFound() {
-        var manager = EntityManager(1)
+        val manager = EntityManager(1)
         val entity = manager.newEntity()
 
         assertThat(entity.findComponent(CountComponent::class)).isNull()
@@ -288,7 +339,7 @@ class ComponentTest {
     }
 
     @Test fun entityManagerThrowsExceptionIfEntityIsNotProcessed() {
-        var manager = EntityManager(1)
+        val manager = EntityManager(1)
         manager.newEntity()
 
         try {
@@ -300,12 +351,12 @@ class ComponentTest {
     }
 
     @Test fun entitySystemRegistrationOrderMatters() {
-        var managerA = EntityManager(1)
+        val managerA = EntityManager(1)
         managerA.registerSystem(AddSystem())
         managerA.registerSystem(QuadrupleSystem())
         val countA = managerA.newEntity().addComponent(CountComponent::class)
 
-        var managerB = EntityManager(1)
+        val managerB = EntityManager(1)
         managerB.registerSystem(QuadrupleSystem())
         managerB.registerSystem(AddSystem())
         val countB = managerB.newEntity().addComponent(CountComponent::class)
@@ -317,5 +368,44 @@ class ComponentTest {
         assertThat(countB.count).isEqualTo(1) // ((0 * 4) + 1)
     }
 
+    @Test fun entitySystemCanStoreStatePerEntityUsingData() {
+        val manager = EntityManager(2)
+        manager.registerSystem(FibonacciSystem())
 
+        val count1 = manager.newEntity().addComponent(CountComponent::class)
+        assertThat(count1.count).isEqualTo(0)
+
+        manager.update(Duration.zero())
+        assertThat(count1.count).isEqualTo(2)
+        manager.update(Duration.zero())
+        assertThat(count1.count).isEqualTo(3)
+        manager.update(Duration.zero())
+        assertThat(count1.count).isEqualTo(5)
+
+        val count2 = manager.newEntity().addComponent(CountComponent::class)
+        manager.update(Duration.zero())
+        assertThat(count1.count).isEqualTo(8)
+        assertThat(count2.count).isEqualTo(2)
+        manager.update(Duration.zero())
+        assertThat(count1.count).isEqualTo(13)
+        assertThat(count2.count).isEqualTo(3)
+    }
+
+    // TODO: Prove onEntityRemoved works
+    @Test fun entitySystemHandlesRemovingEntity() {
+        val manager = EntityManager(3)
+        val entityListSystem = EntityListSystem()
+        manager.registerSystem(entityListSystem)
+
+        val entity1 = manager.newEntity()
+        val entity2 = manager.newEntity()
+        val entity3 = manager.newEntity()
+
+        manager.update(Duration.zero())
+        assertThat(entityListSystem.entityList).containsExactly(entity1, entity2, entity3)
+
+        entity2.free()
+        manager.update(Duration.zero())
+        assertThat(entityListSystem.entityList).containsExactly(entity1, entity3)
+    }
 }

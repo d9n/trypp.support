@@ -97,6 +97,7 @@ class EntityManager(maxEntityCount: Int) {
      */
     fun registerSystem(system: EntitySystem) {
         systems.add(system)
+        entityPool.itemsInUse.forEach { if (it.initialized) system.entityAdded(it) }
     }
 
     /**
@@ -117,18 +118,16 @@ class EntityManager(maxEntityCount: Int) {
     fun update(elapsedTime: Duration) {
         val entities = entityPool.itemsInUse
         entities.forEach { e ->
+            if (!e.initialized) systems.forEach { s -> s.entityAdded(e) }
             e.initialized = true
-            systems.forEach { s ->
-                s.updateEntity(elapsedTime, e)
-            }
-
-            if (e.updateCount == 0) {
-                throw IllegalStateException("Entity registered but not processed by any system: $e")
-            }
-            e.updateCount = 0
         }
-
-
+        systems.forEach { it.update(elapsedTime) }
+        entities.forEach {
+            if (it.updateCount == 0) {
+                throw IllegalStateException("Entity registered but not processed by any system: $it")
+            }
+            it.updateCount = 0
+        }
 
         // Kill any dead objects from the last cycle
         while (!queuedForRemoval.empty()) {
@@ -151,6 +150,7 @@ class EntityManager(maxEntityCount: Int) {
     }
 
     private fun freeEntityInternal(entity: Entity) {
+        systems.forEach { it.entityRemoved(entity) }
         entity.freeComponents()
         entityPool.free(entity)
     }

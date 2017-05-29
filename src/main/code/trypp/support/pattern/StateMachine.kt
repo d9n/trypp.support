@@ -2,6 +2,8 @@ package trypp.support.pattern
 
 import trypp.support.memory.Pool
 import trypp.support.memory.Poolable
+import trypp.support.pattern.observer.Event3
+import trypp.support.pattern.observer.Event4
 import java.util.*
 
 /**
@@ -9,6 +11,9 @@ import java.util.*
  *
  * You instantiate a state machine by registering a list of states and a list of events that it can
  * accept in each state.
+ *
+ * You must [freeze] a state machine before you can start using it. Once frozen, you can't
+ * register any more states.
  *
  * @param S An enumeration type that represents the known states this machine can get into.
  * @param E An enumeration type that represents the known events this machine can accept.
@@ -36,53 +41,59 @@ class StateMachine<S : Enum<S>, E : Enum<E>>(private val initialState: S) {
     var currentState = initialState
         private set
 
-    private val eventHandlers = HashMap<StateEventKey, EventHandler<S, E>>()
-    private var fallbackHandler: EventHandler<S, E> = object : EventHandler<S, E> {
-        override fun run(state: S, event: E, eventData: Any?): S {
-            return state
-        }
-    }
+    /**
+     * Event that is triggered anytime a successful state transition occurs.
+     *
+     * S - oldState
+     * E - event
+     * S - newState
+     * Any? - eventData
+     *
+     * The event will be run on the same thread [handle] is called on.
+     */
+    val onTransition = Event4<S, E, S, Any?>()
 
+    /**
+     * Method that is called anytime an event is unhandled. Often useful for logging.
+     *
+     * S - state
+     * E - event
+     * Any? - eventData
+     *
+     * The event will be run on the same thread [handle] is called on.
+     */
+    val onUnhandled = Event3<S, E, Any?>()
+
+    private val eventHandlers = HashMap<StateEventKey, EventHandler<S, E>>()
     private val keyPool = Pool.of(StateEventKey::class, capacity = 1)
 
+    var frozen = false
+        private set
 
     /**
      * Reset this state machine back to its initial state.
      */
     fun reset() {
         currentState = initialState
-    }
-
-    /**
-     * Set a handler which will be called in the case an event is triggered in some state that
-     * doesn't have an [EventHandler] registered for it. This is usually a good place to log a
-     * warning.
-     *
-     * The handler will be called on the same thread that [handleEvent] is called on.
-     */
-    fun setFallbackHandler(handler: EventHandler<S, E>) {
-        fallbackHandler = handler
-    }
-
-    /**
-     * Convenience method for [setFallbackHandler] that takes a lambda for conciseness.
-     */
-    fun setFallbackHandler(handle: (S, E, Any?) -> S) {
-        fallbackHandler = object : EventHandler<S, E> {
-            override fun run(state: S, event: E, eventData: Any?): S {
-                return handle(state, event, eventData)
-            }
-        }
+        frozen = false
+        keyPool.freeAll()
+        eventHandlers.clear()
+        onTransition.clearListeners()
+        onUnhandled.clearListeners()
     }
 
     /**
      * Register a state and a handler for whenever we receive an event in that state.
      *
-     * The handler will be called on the same thread that [handleEvent] is called on.
+     * The handler will be called on the same thread that [handle] is called on.
      *
      * @throws IllegalArgumentException if duplicate state/event pairs are registered
      */
-    fun registerEvent(state: S, event: E, handler: EventHandler<S, E>) {
+    fun registerTransition(state: S, event: E, handler: EventHandler<S, E>) {
+        if (frozen) {
+            throw IllegalStateException("Can't register transition on frozen state machine")
+        }
+
         val key = StateEventKey(state, event)
         if (eventHandlers.containsKey(key)) {
             throw IllegalArgumentException(
@@ -93,27 +104,38 @@ class StateMachine<S : Enum<S>, E : Enum<E>>(private val initialState: S) {
     }
 
     /**
-     * Convenience method for [registerEvent] that takes a lambda for conciseness.
+     * Convenience method for [registerTransition] that takes a lambda for conciseness.
      */
-    fun registerEvent(state: S, event: E, handle: (S, E, Any?) -> S) {
-        registerEvent(state, event, object : EventHandler<S, E> {
+    fun registerTransition(state: S, event: E, handle: (S, E, Any?) -> S) {
+        registerTransition(state, event, object : EventHandler<S, E> {
             override fun run(state: S, event: E, eventData: Any?): S {
                 return handle(state, event, eventData)
             }
         })
     }
 
-    /**
-     * Tell the state machine to handle the passed in event given the current state.
-     */
-    fun handleEvent(event: E) {
-        handleEvent(event, null)
+    fun freeze() {
+        if (frozen) {
+            throw IllegalStateException("Can't freeze already frozen state machine")
+        }
+        frozen = true
     }
 
     /**
-     * Like [handleEvent] but with some additional data that is related to the event.
+     * Tell the state machine to handle the passed in event given the current state.
      */
-    fun handleEvent(event: E, eventData: Any?) {
+    fun handle(event: E): Boolean {
+        return handle(event, null)
+    }
+
+    /**
+     * Like [handle] but with some additional data that is related to the event.
+     */
+    fun handle(event: E, eventData: Any?): Boolean {
+        if (!frozen) {
+            throw IllegalStateException("You must freeze this state machine before firing events")
+        }
+
         val key = keyPool.grabNew()
         key.state = currentState
         key.event = event
@@ -121,12 +143,16 @@ class StateMachine<S : Enum<S>, E : Enum<E>>(private val initialState: S) {
         val eventHandler = eventHandlers[key]
         keyPool.free(key)
 
-        if (eventHandler == null) {
-            currentState = fallbackHandler.run(currentState, event, eventData)
-            return
+        val prevState = currentState
+        if (eventHandler != null) {
+            currentState = eventHandler.run(prevState, event, eventData)
+            onTransition(prevState, event, currentState, eventData)
+            return true
         }
-
-        currentState = eventHandler.run(currentState, event, eventData)
+        else {
+            onUnhandled(currentState, event, eventData)
+            return false
+        }
     }
 }
 

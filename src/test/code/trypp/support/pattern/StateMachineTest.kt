@@ -4,7 +4,6 @@ import com.google.common.truth.Truth.assertThat
 import org.testng.Assert
 import org.testng.annotations.BeforeMethod
 import org.testng.annotations.Test
-import trypp.support.pattern.StateMachine.EventHandler
 import kotlin.properties.Delegates
 
 class StateMachineTest {
@@ -24,28 +23,17 @@ class StateMachineTest {
         EVENT_WITH_DATA
     }
 
-    class TestFallbackHandler : EventHandler<TestState, TestEvent> {
-        var ranCount = 0
-            private set
-
-        override fun run(state: TestState, event: TestEvent, eventData: Any?): TestState {
-            ranCount++
-            return state
-        }
-    }
-
     private var fsm: StateMachine<TestState, TestEvent> by Delegates.notNull()
-    private val fallbackHandler = TestFallbackHandler()
 
     @BeforeMethod fun setUp() {
         fsm = StateMachine(TestState.A)
 
-        fsm.registerEvent(TestState.A, TestEvent.A_TO_B, { s, e, data -> TestState.B })
-        fsm.registerEvent(TestState.A, TestEvent.A_TO_C, { s, e, data -> TestState.C })
-        fsm.registerEvent(TestState.B, TestEvent.B_TO_C, { s, e, data -> TestState.C })
-        fsm.registerEvent(TestState.B, TestEvent.ANY_TO_A, { s, e, data -> TestState.A })
-        fsm.registerEvent(TestState.C, TestEvent.ANY_TO_A, { s, e, data -> TestState.A })
-        fsm.setFallbackHandler(fallbackHandler)
+        fsm.registerTransition(TestState.A, TestEvent.A_TO_B, { s, e, data -> TestState.B })
+        fsm.registerTransition(TestState.A, TestEvent.A_TO_C, { s, e, data -> TestState.C })
+        fsm.registerTransition(TestState.B, TestEvent.B_TO_C, { s, e, data -> TestState.C })
+        fsm.registerTransition(TestState.B, TestEvent.ANY_TO_A, { s, e, data -> TestState.A })
+        fsm.registerTransition(TestState.C, TestEvent.ANY_TO_A, { s, e, data -> TestState.A })
+        // Tests must freeze fsm before using it!
     }
 
     @Test fun stateMachineStartsInStateSetInConstructor() {
@@ -57,65 +45,138 @@ class StateMachineTest {
     }
 
     @Test fun testStateMachineChangesStateAsExpected() {
+        fsm.freeze()
+
         assertThat(fsm.currentState).isEqualTo(TestState.A)
-        fsm.handleEvent(TestEvent.A_TO_B)
+        fsm.handle(TestEvent.A_TO_B)
         assertThat(fsm.currentState).isEqualTo(TestState.B)
-        fsm.handleEvent(TestEvent.B_TO_C)
+        fsm.handle(TestEvent.B_TO_C)
         assertThat(fsm.currentState).isEqualTo(TestState.C)
-        fsm.handleEvent(TestEvent.ANY_TO_A)
+        fsm.handle(TestEvent.ANY_TO_A)
         assertThat(fsm.currentState).isEqualTo(TestState.A)
-        fsm.handleEvent(TestEvent.A_TO_B)
+        fsm.handle(TestEvent.A_TO_B)
         assertThat(fsm.currentState).isEqualTo(TestState.B)
-        fsm.handleEvent(TestEvent.B_TO_C)
+        fsm.handle(TestEvent.B_TO_C)
         assertThat(fsm.currentState).isEqualTo(TestState.C)
 
         fsm.reset()
         assertThat(fsm.currentState).isEqualTo(TestState.A)
+        assertThat(fsm.frozen).isFalse()
+
+        // Resetting should clear previously registered listeners
+        fsm.freeze()
+        fsm.handle(TestEvent.A_TO_B)
+        assertThat(fsm.currentState).isEqualTo(TestState.A)
     }
 
-    @Test fun fallbackHandlerCatchesUnregisteredEvent() {
-        assertThat(fallbackHandler.ranCount).isEqualTo(0)
+    @Test fun freezeRemovesRegisteredTransitions() {
+        fsm.freeze()
+        assertThat(fsm.currentState).isEqualTo(TestState.A)
+        fsm.handle(TestEvent.A_TO_B)
+        assertThat(fsm.currentState).isEqualTo(TestState.B)
 
-        fsm.handleEvent(TestEvent.A_TO_B)
-        assertThat(fallbackHandler.ranCount).isEqualTo(0)
+        fsm.reset()
+        fsm.freeze()
 
-        fsm.handleEvent(TestEvent.UNREGISTERED_EVENT)
-        assertThat(fallbackHandler.ranCount).isEqualTo(1)
+        assertThat(fsm.currentState).isEqualTo(TestState.A)
+        fsm.handle(TestEvent.A_TO_B)
+        assertThat(fsm.currentState).isEqualTo(TestState.A)
+    }
+
+    @Test fun unhandledListenerCatchesUnregisteredEvent() {
+        fsm.freeze()
+
+        var ranCount = 0
+        fsm.onUnhandled += { s, e, d -> ranCount++ }
+        assertThat(ranCount).isEqualTo(0)
+
+        fsm.handle(TestEvent.A_TO_B)
+        assertThat(ranCount).isEqualTo(0)
+
+        fsm.handle(TestEvent.UNREGISTERED_EVENT)
+        assertThat(ranCount).isEqualTo(1)
 
         assertThat(fsm.currentState).isEqualTo(TestState.B)
-        fsm.handleEvent(TestEvent.A_TO_B)
-        assertThat(fallbackHandler.ranCount).isEqualTo(2)
-    }
-
-    @Test fun duplicateRegistrationThrowsException() {
-        try {
-            fsm.registerEvent(TestState.A, TestEvent.A_TO_B, { s, e, data -> TestState.B })
-            Assert.fail("Duplicate event registration is not allowed")
-        }
-        catch (e: IllegalArgumentException) {
-        }
+        fsm.handle(TestEvent.A_TO_B)
+        assertThat(ranCount).isEqualTo(2)
     }
 
     @Test fun eventDataIsPassedOn() {
         val dummyData = Object()
 
         var handlerCalled = false
-        fsm.registerEvent(TestState.A, TestEvent.EVENT_WITH_DATA, { s, e, data ->
+        fsm.registerTransition(TestState.A, TestEvent.EVENT_WITH_DATA, { s, e, data ->
             handlerCalled = true
             assertThat(data).isEqualTo(dummyData)
             s // Stay in same state
         })
+        fsm.freeze()
 
         assertThat(handlerCalled).isFalse()
-        fsm.handleEvent(TestEvent.EVENT_WITH_DATA, dummyData)
+        fsm.handle(TestEvent.EVENT_WITH_DATA, dummyData)
         assertThat(handlerCalled).isTrue()
     }
 
-    @Test fun setFallbackHandlerByLambdaWorksAsExpected() {
-        fsm.setFallbackHandler { s, e, d -> TestState.C }
+    @Test fun eventListenerWorksAsExpected() {
+        val dummyData = Object()
 
-        assertThat(fsm.currentState).isEqualTo(TestState.A)
-        fsm.handleEvent(TestEvent.UNREGISTERED_EVENT)
-        assertThat(fsm.currentState).isEqualTo(TestState.C)
+        var listenerCalled = false
+        fsm.registerTransition(TestState.A, TestEvent.EVENT_WITH_DATA, { s, e, d -> TestState.B })
+        fsm.onTransition += ({ s1, evt, s2, data ->
+             listenerCalled = true
+             assertThat(s1).isEqualTo(TestState.A)
+             assertThat(evt).isEqualTo(TestEvent.EVENT_WITH_DATA)
+             assertThat(s2).isEqualTo(TestState.B)
+             assertThat(data).isEqualTo(dummyData)
+         })
+        fsm.freeze()
+
+        assertThat(listenerCalled).isFalse()
+        fsm.handle(TestEvent.EVENT_WITH_DATA, dummyData)
+        assertThat(listenerCalled).isTrue()
+    }
+
+    @Test fun duplicateRegistrationThrowsException() {
+        try {
+            fsm.registerTransition(TestState.A, TestEvent.A_TO_B, { s, e, data -> TestState.B })
+            Assert.fail("Duplicate event registration is not allowed")
+        }
+        catch (e: IllegalArgumentException) {
+        }
+    }
+
+    @Test fun freezingTwiceThrowsException() {
+        fsm.freeze()
+        try {
+            fsm.freeze()
+            Assert.fail("Cannot freeze a frozen state machine")
+        }
+        catch (e: IllegalStateException) {
+        }
+    }
+
+    @Test fun cannotRegisterTransitionAfterFrozen() {
+        fsm.freeze()
+        try {
+            assertThat(fsm.frozen).isTrue()
+            fsm.registerTransition(TestState.A, TestEvent.EVENT_WITH_DATA, { s, e, d -> TestState.A })
+            Assert.fail("Cannot register transition on frozen state machine")
+        }
+        catch (e: IllegalStateException) {
+        }
+    }
+
+    @Test fun handleCannotBeCalledBeforeFreezing() {
+        try {
+            assertThat(fsm.frozen).isFalse()
+            fsm.handle(TestEvent.A_TO_B)
+            Assert.fail("Cannot fire event on non-frozen state machine")
+        }
+        catch (e: IllegalStateException) {
+        }
+
+        fsm.freeze()
+        fsm.handle(TestEvent.A_TO_B)
+        assertThat(fsm.currentState).isEqualTo(TestState.B)
     }
 }
