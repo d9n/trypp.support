@@ -1,12 +1,13 @@
 package trypp.support.pattern
 
+import trypp.support.extensions.kClass
 import trypp.support.pattern.exceptions.BadServiceClassException
 import trypp.support.pattern.exceptions.ServiceExistsException
 import trypp.support.pattern.exceptions.ServiceNotFoundException
-import trypp.support.extensions.kClass
 import java.util.*
 import kotlin.reflect.KClass
 import kotlin.reflect.defaultType
+import kotlin.reflect.full.defaultType
 
 /**
  * A collection of services, which is basically a mapping of interface to implementation pairs.
@@ -44,7 +45,7 @@ class Services {
         }
 
         try {
-            val instance = defaultImpl.constructors.first { it.parameters.size == 0 }.call()
+            val instance = defaultImpl.constructors.first { it.parameters.isEmpty() }.call()
             serviceImpls.put(base, instance)
         }
         catch (e: NoSuchElementException) {
@@ -57,7 +58,7 @@ class Services {
             throw ServiceExistsException(base, get(base).kClass, defaultInstance.kClass)
         }
 
-        serviceImpls.put(base, defaultInstance);
+        serviceImpls.put(base, defaultInstance)
     }
 
     // create method always ensures cast is good
@@ -79,7 +80,7 @@ class Services {
         }
         catch (e: NoSuchElementException) {
             try {
-                newInstance = impl.constructors.first { it.parameters.size == 0 }.call()
+                newInstance = impl.constructors.first { it.parameters.isEmpty() }.call()
             }
             catch (e: NoSuchElementException) {
                 throw BadServiceClassException(impl)
@@ -93,7 +94,7 @@ class Services {
 
     fun <T : Any> replace(base: KClass<T>, instance: T): T {
         val currentInstance = get(base)
-        serviceImpls.put(base, instance);
+        serviceImpls.put(base, instance)
 
         return currentInstance
     }

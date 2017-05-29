@@ -1,6 +1,10 @@
 package trypp.support.time
 
 import trypp.support.memory.Poolable
+import trypp.support.time.Duration.Companion.of
+import trypp.support.time.Duration.Companion.ofMilliseconds
+import trypp.support.time.Duration.Companion.ofMinutes
+import trypp.support.time.Duration.Companion.ofSeconds
 
 /**
  * An class which represents a time duration.
@@ -137,7 +141,7 @@ internal constructor() : Poolable {
 
     override fun equals(other: Any?): Boolean {
         if (other is Duration) {
-            return milliseconds.equals(other.milliseconds)
+            return milliseconds == other.milliseconds
         }
         return false
     }

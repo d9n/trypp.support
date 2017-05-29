@@ -109,7 +109,7 @@ class OptInt : Poolable {
 
         if (other is OptInt) {
             if (hasValue && other.hasValue) {
-                return value.equals(other.value)
+                return value == other.value
             }
             else {
                 return !hasValue && !other.hasValue

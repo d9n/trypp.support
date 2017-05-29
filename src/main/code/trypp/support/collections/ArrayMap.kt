@@ -172,7 +172,7 @@ class ArrayMap<K : Any, V : Any>(expectedSize: Int = DEFAULT_EXPECTED_SIZE, priv
      * @throws IllegalArgumentException if no value is associated with the passed in key.
      */
     operator fun get(key: K): V {
-        var result = getIf(key) ?:
+        val result = getIf(key) ?:
             throw IllegalArgumentException("No value associated with key $key")
         return result
     }

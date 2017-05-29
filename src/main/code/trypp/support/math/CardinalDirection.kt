@@ -1,8 +1,7 @@
 package trypp.support.math
 
 
-import trypp.support.memory.Pool
-import java.util.Random
+import java.util.*
 
 /**
  * Like [CompassDirection] but with only 4 directions.
@@ -29,14 +28,14 @@ enum class CardinalDirection {
         private val random = Random()
 
         init {
-            REGIONS[0] = E;
-            REGIONS[1] = N;
-            REGIONS[2] = N;
-            REGIONS[3] = W;
-            REGIONS[4] = W;
-            REGIONS[5] = S;
-            REGIONS[6] = S;
-            REGIONS[7] = E;
+            REGIONS[0] = E
+            REGIONS[1] = N
+            REGIONS[2] = N
+            REGIONS[3] = W
+            REGIONS[4] = W
+            REGIONS[5] = S
+            REGIONS[6] = S
+            REGIONS[7] = E
         }
 
         fun getRandom(): CardinalDirection {

@@ -7,5 +7,4 @@ import kotlin.reflect.KClass
  */
 class ServiceExistsException(base: KClass<out Any>, prevImpl: KClass<out Any>,
                              newImpl: KClass<out Any>) :
-    Exception("Service $base already exists: $prevImpl, rejecting $newImpl") {
-}
+    Exception("Service $base already exists: $prevImpl, rejecting $newImpl")

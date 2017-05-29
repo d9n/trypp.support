@@ -39,7 +39,7 @@ class ArraySet<E : Any>(expectedSize: Int = ArrayMap.DEFAULT_EXPECTED_SIZE, load
      * @throws IllegalArgumentException if the element already exists in the set.
      */
     fun put(element: E) {
-        internalMap.put(element, DUMMY_OJBECT)
+        internalMap.put(element, DUMMY_OBJECT)
     }
 
     /**
@@ -48,7 +48,7 @@ class ArraySet<E : Any>(expectedSize: Int = ArrayMap.DEFAULT_EXPECTED_SIZE, load
      * @return `true` if the element was only just now added into the set.
      */
     fun putIf(element: E): Boolean {
-        return internalMap.putOrReplace(element, DUMMY_OJBECT) === InsertMethod.PUT
+        return internalMap.putOrReplace(element, DUMMY_OBJECT) === InsertMethod.PUT
     }
 
     /**
@@ -75,6 +75,6 @@ class ArraySet<E : Any>(expectedSize: Int = ArrayMap.DEFAULT_EXPECTED_SIZE, load
     }
 
     companion object {
-        private val DUMMY_OJBECT = Any()
+        private val DUMMY_OBJECT = Any()
     }
 }

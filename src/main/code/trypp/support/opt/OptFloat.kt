@@ -111,7 +111,7 @@ class OptFloat : Poolable {
 
         if (other is OptFloat) {
             if (hasValue && other.hasValue) {
-                return value.equals(other.value)
+                return value == other.value
             }
             else {
                 return !hasValue && !other.hasValue

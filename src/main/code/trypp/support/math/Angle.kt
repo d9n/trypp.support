@@ -1,5 +1,7 @@
 package trypp.support.math
 
+import trypp.support.math.Angle.Companion.ofDegrees
+import trypp.support.math.Angle.Companion.ofRadians
 import trypp.support.memory.Poolable
 import trypp.support.opt.OptFloat
 

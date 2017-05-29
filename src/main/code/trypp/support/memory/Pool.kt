@@ -33,7 +33,7 @@ class Pool<T>(private val allocate: () -> T, private val reset: (T) -> Unit, cap
         fun <P : Poolable> of(poolableClass: KClass<P>, capacity: Int = DEFAULT_CAPACITY): Pool<P> {
             val emptyCons: KFunction<P>
             try {
-                emptyCons = poolableClass.constructors.first { it.parameters.size == 0 }
+                emptyCons = poolableClass.constructors.first { it.parameters.isEmpty() }
             }
             catch(e: NoSuchElementException) {
                 throw IllegalArgumentException(
@@ -120,7 +120,7 @@ class Pool<T>(private val allocate: () -> T, private val reset: (T) -> Unit, cap
     fun freeCount(count: Int) {
         var indexToFree = _itemsInUse.size - 1
         for (i in 0 until count) {
-            var item = _itemsInUse[indexToFree]
+            val item = _itemsInUse[indexToFree]
             returnItemToPool(item)
             _itemsInUse.removeAt(indexToFree)
             indexToFree--

@@ -8,5 +8,5 @@ package trypp.support.memory;
  * [Pool] can still work with that.
  */
 interface Poolable {
-    fun reset();
+    fun reset()
 }

@@ -11,15 +11,10 @@ import kotlin.reflect.KClass
  * element directly instead of searching through the pool to find it.
  */
 class HeapPool<T : Any> private constructor(private val innerPool: Pool<T>) {
-    private val itemIndices: ArrayMap<T, Int>
+    private val itemIndices: ArrayMap<T, Int> = ArrayMap(innerPool.capacity)
 
     constructor(allocate: () -> T, reset: (T) -> Unit, capacity: Int = DEFAULT_CAPACITY) :
-    this(Pool(allocate, reset, capacity)) {
-    }
-
-    init {
-        itemIndices = ArrayMap<T, Int>(innerPool.capacity)
-    }
+    this(Pool(allocate, reset, capacity))
 
     fun makeResizable(maxCapacity: Int): HeapPool<T> {
         innerPool.makeResizable(maxCapacity)
